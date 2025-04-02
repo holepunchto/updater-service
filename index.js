@@ -18,7 +18,9 @@ function main (botPath) {
 }
 
 function run (botHandler) {
-  const bot = botHandler(Pear.config.args)
+  const bot = botHandler(Pear.config.args, {
+    getVersions: Pear.versions
+  })
   const pipe = Pear.worker.pipe()
   if (pipe) {
     bot.then(() => pipe.write('ready'))
