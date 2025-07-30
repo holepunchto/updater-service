@@ -46,9 +46,7 @@ function runWorker (runLink) {
 //
 
 function run (botHandler) {
-  const bot = botHandler(Pear.config.args, {
-    getVersions: Pear.versions
-  })
+  const bot = botHandler(Pear.config.args)
   const pipe = Pear.worker.pipe()
   if (pipe) {
     bot.then(() => pipe.write(READY_MSG))
