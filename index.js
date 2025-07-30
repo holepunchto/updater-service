@@ -5,6 +5,7 @@ const debounceify = require('debounceify')
 const isDev = Pear.config.key === null
 
 const READY_MSG = 'ready'
+const CLOSE_MSG = 'close'
 
 //
 // main
@@ -37,7 +38,7 @@ function runWorker (runLink) {
   const closed = new Promise((resolve) => {
     pipe.on('close', () => resolve())
   })
-  const close = () => pipe.end()
+  const close = () => pipe.write(CLOSE_MSG)
   return { ready, closed, close }
 }
 
@@ -50,13 +51,18 @@ function run (botHandler) {
   const pipe = Pear.worker.pipe()
   if (pipe) {
     bot.then(() => pipe.write(READY_MSG))
-    pipe.on('end', () => bot.then((res) => {
-      if (typeof res === 'object' && 'close' in res && typeof res.close === 'function') {
-        res.close()
-        return
+    pipe.on('data', (data) => {
+      if (data.toString() === CLOSE_MSG) {
+        bot.then(async (res) => {
+          if (typeof res === 'object' && 'close' in res && typeof res.close === 'function') {
+            await res.close()
+          } else {
+            console.error('Missing close function')
+          }
+          pipe.end()
+        })
       }
-      console.error('Missing close function')
-    }))
+    })
   }
 }
 
