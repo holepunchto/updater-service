@@ -15,17 +15,22 @@ function main (botPath) {
 
   let worker = runWorker(runLink)
 
-  Pear.updates(debounceify(async () => {
+  const sub = Pear.updates(debounceify(async () => {
     await worker.ready
     worker.close()
     await worker.closed
     worker = runWorker(runLink)
     await worker.ready
   }))
+  Pear.teardown(() => sub.destroy())
 }
 
 function runWorker (runLink) {
   const pipe = Pear.worker.run(runLink, Pear.config.args)
+  pipe.on('error', (err) => {
+    if (err.code === 'ENOTCONN') return
+    throw err
+  })
   const ready = new Promise((resolve) => {
     pipe.on('data', (data) => data.toString() === READY_MSG && resolve())
   })
