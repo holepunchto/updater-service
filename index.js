@@ -34,6 +34,7 @@ function runWorker (runLink) {
   })
   const ready = new Promise((resolve) => {
     pipe.on('data', (data) => data.toString() === READY_MSG && resolve())
+    pipe.on('close', () => resolve())
   })
   const closed = new Promise((resolve) => {
     pipe.on('close', () => resolve())
@@ -48,22 +49,21 @@ function runWorker (runLink) {
 
 function run (botHandler) {
   const bot = botHandler(Pear.config.args)
+  bot.catch(console.log)
   const pipe = Pear.worker.pipe()
-  if (pipe) {
-    bot.then(() => pipe.write(READY_MSG))
-    pipe.on('data', (data) => {
-      if (data.toString() === CLOSE_MSG) {
-        bot.then(async (res) => {
-          if (typeof res === 'object' && 'close' in res && typeof res.close === 'function') {
-            await res.close()
-          } else {
-            console.error('Missing close function')
-          }
-          pipe.end()
-        })
-      }
-    })
-  }
+  bot.then(() => pipe.write(READY_MSG))
+  pipe.on('data', (data) => {
+    if (data.toString() === CLOSE_MSG) {
+      bot.then(async (res) => {
+        if (typeof res === 'object' && 'close' in res && typeof res.close === 'function') {
+          await res.close()
+        } else {
+          console.log('Missing close function.')
+        }
+        pipe.end()
+      })
+    }
+  })
 }
 
 module.exports = { main, run }
