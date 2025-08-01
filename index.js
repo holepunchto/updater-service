@@ -17,6 +17,7 @@ function main (botPath) {
 
   const debouncedRestart = debounceify(async () => {
     if (workerVersion === `${fork}.${length}`) return
+    console.log(`Updating worker from ${workerVersion} to ${fork}.${length}`)
     await worker.ready
     worker.close()
     await worker.closed
@@ -26,6 +27,7 @@ function main (botPath) {
   })
 
   const sub = Pear.updates((update) => {
+    if (!update.app) return
     fork = update.version.fork
     length = update.version.length
     debouncedRestart()
