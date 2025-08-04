@@ -5,7 +5,7 @@
 ## Sample bot
 - create `index.js` as the main entry point, then run `botService.main(<path-to-bot>)`
 - create `bot.js`, then implement the bot handler inside `botService.run(<bot-handler>)`
-  - `bot-handler` receives params `args` and `opts`
+  - `bot-handler` receives params `args`
   - `bot-handler` should return a `close` function to teardown the bot 
 
 
