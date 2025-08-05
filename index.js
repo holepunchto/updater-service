@@ -13,7 +13,13 @@ function main (botPath) {
   let fork = Pear.config.fork
   let length = Pear.config.length
   let workerVersion = `${fork}.${length}`
-  let worker = startWorker(getLink(botPath, fork, length))
+  let sub = null
+
+  const start = () => startWorker(
+    getLink(botPath, fork, length),
+    () => { if (sub) sub.destroy() }
+  )
+  let worker = start()
 
   const debouncedRestart = debounceify(async () => {
     if (workerVersion === `${fork}.${length}`) return
@@ -21,12 +27,12 @@ function main (botPath) {
     await worker.ready
     worker.close()
     await worker.closed
-    worker = startWorker(getLink(botPath, fork, length))
+    worker = start()
     await worker.ready
     workerVersion = await worker.version
   })
 
-  const sub = Pear.updates((update) => {
+  sub = Pear.updates((update) => {
     if (!update.app) return
     fork = update.version.fork
     length = update.version.length
@@ -43,8 +49,9 @@ function getLink (botPath, fork, length) {
   return url.href
 }
 
-function startWorker (runLink) {
+function startWorker (runLink, onClose) {
   const pipe = Pear.worker.run(runLink, Pear.config.args)
+  pipe.on('close', () => onClose())
   pipe.on('error', (err) => {
     if (err.code === 'ENOTCONN') return
     throw err
