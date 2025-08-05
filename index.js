@@ -1,4 +1,5 @@
 /* global Pear */
+const process = require('process')
 const debounceify = require('debounceify')
 
 const READY_MSG = 'ready'
@@ -56,6 +57,12 @@ function startWorker (runLink, onClose) {
     if (err.code === 'ENOTCONN') return
     throw err
   })
+  pipe.on('data', (data) => {
+    const msg = data.toString()
+    if (msg.startsWith('[UncaughtException]') || msg.startsWith('[UnhandledRejection]')) {
+      console.log(msg)
+    }
+  })
 
   const ready = new Promise((resolve) => {
     pipe.on('data', (data) => data.toString() === READY_MSG && resolve())
@@ -85,25 +92,33 @@ function startWorker (runLink, onClose) {
 
 function run (botHandler) {
   const bot = botHandler(Pear.config.args)
-  bot.catch(console.log)
 
   const pipe = Pear.worker.pipe()
   if (!pipe) return
 
-  pipe.write(`${VERSION_MSG_PREFIX} ${Pear.config.fork}.${Pear.config.length}`)
-  bot.then(() => pipe.write(READY_MSG))
+  process.on('uncaughtException', (err) => {
+    pipe.write(`[UncaughtException] ${err?.stack || err}`)
+    pipe.end()
+  })
+  process.on('unhandledRejection', (err) => {
+    pipe.write(`[UnhandledRejection] ${err?.stack || err}`)
+    pipe.end()
+  })
+
   pipe.on('data', (data) => {
     if (data.toString() === CLOSE_MSG) {
       bot.then(async (res) => {
-        if (typeof res === 'object' && 'close' in res && typeof res.close === 'function') {
+        if (typeof res?.close === 'function') {
           await res.close()
         } else {
-          console.log('Missing close function.')
+          console.log('Missing close function')
         }
         pipe.end()
       })
     }
   })
+  pipe.write(`${VERSION_MSG_PREFIX} ${Pear.config.fork}.${Pear.config.length}`)
+  bot.then(() => pipe.write(READY_MSG))
 }
 
 module.exports = { main, run }

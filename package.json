@@ -17,10 +17,17 @@
     "lint": "standard --fix"
   },
   "dependencies": {
+    "bare-process": "^4.2.1",
     "debounceify": "^1.1.0"
   },
   "devDependencies": {
     "pear-interface": "^1.1.0",
     "standard": "^17.1.2"
+  },
+  "imports": {
+    "process": {
+      "bare": "bare-process",
+      "default": "process"
+    }
   }
 }
