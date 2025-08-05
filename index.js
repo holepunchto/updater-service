@@ -16,19 +16,17 @@ function main (botPath) {
   let workerVersion = `${fork}.${length}`
   let sub = null
 
-  const start = () => startWorker(
-    getLink(botPath, fork, length),
-    () => { if (sub) sub.destroy() }
-  )
-  let worker = start()
+  let worker = startWorker(getLink(botPath, fork, length))
 
   const debouncedRestart = debounceify(async () => {
     if (workerVersion === `${fork}.${length}`) return
     console.log(`Updating worker from ${workerVersion} to ${fork}.${length}`)
     await worker.ready
+    console.log('Closing old worker')
     worker.close()
     await worker.closed
-    worker = start()
+    console.log('Starting new worker')
+    worker = startWorker(getLink(botPath, fork, length))
     await worker.ready
     workerVersion = await worker.version
   })
@@ -42,6 +40,42 @@ function main (botPath) {
   Pear.teardown(() => sub.destroy())
 }
 
+function startWorker (runLink) {
+  const readyPr = promiseWithResolvers()
+  const closedPr = promiseWithResolvers()
+  const versionPr = promiseWithResolvers()
+
+  const pipe = Pear.worker.run(runLink, Pear.config.args)
+  pipe.on('error', (err) => {
+    console.log('Worker error', err)
+    if (err.code === 'ENOTCONN') return
+    throw err
+  })
+  pipe.on('close', () => {
+    console.log('Worker closed')
+    readyPr.resolve()
+    closedPr.resolve()
+  })
+  pipe.on('data', (data) => {
+    const lines = data.toString().split('\n')
+    console.log('Worker data', lines)
+    for (let msg of lines) {
+      msg = msg.trim()
+      if (!msg) continue
+      if (msg === READY_MSG) readyPr.resolve()
+      else if (msg.startsWith(VERSION_MSG_PREFIX)) versionPr.resolve(msg.split(' ')[1])
+      else if (msg.startsWith('[UncaughtException]') || msg.startsWith('[UnhandledRejection]')) throw new Error(msg)
+    }
+  })
+
+  return {
+    ready: readyPr.promise,
+    closed: closedPr.promise,
+    version: versionPr.promise,
+    close: () => pipe.write(`${CLOSE_MSG}\n`)
+  }
+}
+
 function getLink (botPath, fork, length) {
   if (Pear.config.key === null) return botPath // dev mode
 
@@ -50,75 +84,53 @@ function getLink (botPath, fork, length) {
   return url.href
 }
 
-function startWorker (runLink, onClose) {
-  const pipe = Pear.worker.run(runLink, Pear.config.args)
-  pipe.on('close', () => onClose())
-  pipe.on('error', (err) => {
-    if (err.code === 'ENOTCONN') return
-    throw err
+function promiseWithResolvers () {
+  const resolvers = {}
+  const promise = new Promise((resolve, reject) => {
+    resolvers.resolve = resolve
+    resolvers.reject = reject
   })
-  pipe.on('data', (data) => {
-    const msg = data.toString()
-    if (msg.startsWith('[UncaughtException]') || msg.startsWith('[UnhandledRejection]')) {
-      console.log(msg)
-    }
-  })
-
-  const ready = new Promise((resolve) => {
-    pipe.on('data', (data) => data.toString() === READY_MSG && resolve())
-    pipe.on('close', () => resolve())
-  })
-  const closed = new Promise((resolve) => {
-    pipe.on('close', () => resolve())
-  })
-  const version = new Promise((resolve) => {
-    pipe.on('data', (data) => {
-      const msg = data.toString()
-      if (msg.startsWith(VERSION_MSG_PREFIX)) {
-        const res = msg.split(' ')[1]
-        resolve(res)
-      }
-    })
-  })
-
-  const close = () => pipe.write(CLOSE_MSG)
-
-  return { ready, closed, version, close }
+  return { promise, ...resolvers }
 }
 
 //
 // worker
 //
 
-function run (botHandler) {
-  const bot = botHandler(Pear.config.args)
-
+async function run (botHandler) {
   const pipe = Pear.worker.pipe()
+  if (pipe) { // handle uncaught errors from botHandler
+    process.on('uncaughtException', (err) => {
+      pipe.write(`[UncaughtException] ${err?.stack || err}\n`)
+      pipe.end()
+    })
+    process.on('unhandledRejection', (err) => {
+      pipe.write(`[UnhandledRejection] ${err?.stack || err}\n`)
+      pipe.end()
+    })
+  }
+
+  const bot = await botHandler(Pear.config.args)
+
   if (!pipe) return
-
-  process.on('uncaughtException', (err) => {
-    pipe.write(`[UncaughtException] ${err?.stack || err}`)
-    pipe.end()
-  })
-  process.on('unhandledRejection', (err) => {
-    pipe.write(`[UnhandledRejection] ${err?.stack || err}`)
-    pipe.end()
-  })
-
-  pipe.on('data', (data) => {
-    if (data.toString() === CLOSE_MSG) {
-      bot.then(async (res) => {
-        if (typeof res?.close === 'function') {
-          await res.close()
+  pipe.on('data', async (data) => {
+    const lines = data.toString().split('\n')
+    console.log('Bot data', lines)
+    for (let msg of lines) {
+      msg = msg.trim()
+      if (!msg) continue
+      if (msg === CLOSE_MSG) {
+        if (typeof bot?.close === 'function') {
+          await bot.close()
         } else {
           console.log('Missing close function')
         }
         pipe.end()
-      })
+      }
     }
   })
-  pipe.write(`${VERSION_MSG_PREFIX} ${Pear.config.fork}.${Pear.config.length}`)
-  bot.then(() => pipe.write(READY_MSG))
+  pipe.write(`${VERSION_MSG_PREFIX} ${Pear.config.fork}.${Pear.config.length}\n`)
+  pipe.write(`${READY_MSG}\n`)
 }
 
 module.exports = { main, run }
