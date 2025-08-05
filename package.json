@@ -1,6 +1,6 @@
 {
   "name": "@holepunchto/bot-service",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Run bot as a pear app",
   "author": "Holepunch",
   "license": "Apache-2.0",
