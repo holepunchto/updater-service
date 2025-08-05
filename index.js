@@ -15,6 +15,7 @@ function main (botPath) {
   let length = Pear.config.length
   let workerVersion = `${fork}.${length}`
   let worker = startWorker(getLink(botPath, fork, length))
+  Pear.teardown(() => worker.close())
 
   const debouncedRestart = debounceify(async () => {
     if (workerVersion === `${fork}.${length}`) return
