@@ -11,11 +11,11 @@
 
 ```js
 // index.js
-const botService = require('bot-service')
+const botService = require('@holepunchto/bot-service')
 botService.main('bot.js')
 
 // bot.js
-const botService = require('bot-service')
+const botService = require('@holepunchto/bot-service')
 botService.run(async (args) => {
   // bot handler goes here
   const interval = setInterval(() => {

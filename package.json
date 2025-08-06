@@ -2,6 +2,32 @@
   "name": "@holepunchto/bot-service",
   "version": "1.0.13",
   "description": "Run bot as a pear app",
+  "main": "index.js",
+  "files": [
+    "index.js"
+  ],
+  "scripts": {
+    "lint": "standard",
+    "lint:fix": "standard --fix",
+    "test:gen": "brittle -r test/all.mjs test/*.test.js",
+    "test": "bare test/all.mjs"
+  },
+  "dependencies": {
+    "bare-process": "^4.2.1",
+    "debounceify": "^1.1.0"
+  },
+  "devDependencies": {
+    "pear-interface": "^1.1.0",
+    "brittle": "^3.17.1",
+    "standard": "^17.1.2",
+    "test-tmp": "^1.4.0"
+  },
+  "imports": {
+    "process": {
+      "bare": "bare-process",
+      "default": "process"
+    }
+  },
   "author": "Holepunch",
   "license": "Apache-2.0",
   "repository": {
@@ -11,23 +37,5 @@
   "bugs": {
     "url": "https://github.com/holepunchto/bot-service/issues"
   },
-  "homepage": "https://github.com/holepunchto/bot-service#readme",
-  "main": "index.js",
-  "scripts": {
-    "lint": "standard --fix"
-  },
-  "dependencies": {
-    "bare-process": "^4.2.1",
-    "debounceify": "^1.1.0"
-  },
-  "devDependencies": {
-    "pear-interface": "^1.1.0",
-    "standard": "^17.1.2"
-  },
-  "imports": {
-    "process": {
-      "bare": "bare-process",
-      "default": "process"
-    }
-  }
+  "homepage": "https://github.com/holepunchto/bot-service#readme"
 }
