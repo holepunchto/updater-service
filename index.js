@@ -2,10 +2,6 @@
 const process = require('process')
 const debounceify = require('debounceify')
 
-const READY_MSG = 'ready'
-const CLOSE_MSG = 'close'
-const VERSION_MSG_PREFIX = 'Version:'
-
 //
 // main
 //
@@ -61,9 +57,17 @@ function startWorker (runLink) {
     for (let msg of lines) {
       msg = msg.trim()
       if (!msg) continue
-      if (msg === READY_MSG) readyPr.resolve()
-      else if (msg.startsWith(VERSION_MSG_PREFIX)) versionPr.resolve(msg.split(' ')[1])
-      else if (msg.startsWith('[UncaughtException]') || msg.startsWith('[UnhandledRejection]')) throw new Error(msg)
+      msg = (() => {
+        try {
+          return JSON.parse(msg)
+        } catch {
+          return { tag: 'unknown', data: msg }
+        }
+      })()
+
+      if (msg.tag === 'ready') readyPr.resolve()
+      else if (msg.tag === 'version') versionPr.resolve(msg.data)
+      else if (msg.tag === 'error') throw new Error(msg.data)
     }
   })
 
@@ -71,7 +75,7 @@ function startWorker (runLink) {
     ready: readyPr.promise,
     closed: closedPr.promise,
     version: versionPr.promise,
-    close: () => pipe.write(`${CLOSE_MSG}\n`)
+    close: () => pipe.write(JSON.stringify({ tag: 'close' }) + '\n')
   }
 }
 
@@ -100,11 +104,11 @@ async function run (botHandler) {
   const pipe = Pear.worker.pipe()
   if (pipe) { // handle uncaught errors from botHandler
     process.on('uncaughtException', (err) => {
-      pipe.write(`[UncaughtException] ${err?.stack || err}\n`)
+      pipe.write(JSON.stringify({ tag: 'error', data: `${err?.stack || err}` }) + '\n')
       pipe.end()
     })
     process.on('unhandledRejection', (err) => {
-      pipe.write(`[UnhandledRejection] ${err?.stack || err}\n`)
+      pipe.write(JSON.stringify({ tag: 'error', data: `${err?.stack || err}` }) + '\n')
       pipe.end()
     })
   }
@@ -118,7 +122,15 @@ async function run (botHandler) {
     for (let msg of lines) {
       msg = msg.trim()
       if (!msg) continue
-      if (msg === CLOSE_MSG) {
+      msg = (() => {
+        try {
+          return JSON.parse(msg)
+        } catch {
+          return { tag: 'unknown', data: msg }
+        }
+      })()
+
+      if (msg.tag === 'close') {
         if (typeof bot?.close === 'function') {
           await bot.close()
         } else {
@@ -128,8 +140,8 @@ async function run (botHandler) {
       }
     }
   })
-  pipe.write(`${VERSION_MSG_PREFIX} ${Pear.config.fork}.${Pear.config.length}\n`)
-  pipe.write(`${READY_MSG}\n`)
+  pipe.write(JSON.stringify({ tag: 'version', data: `${Pear.config.fork}.${Pear.config.length}` }) + '\n')
+  pipe.write(JSON.stringify({ tag: 'ready' }) + '\n')
 }
 
 module.exports = { main, run }
