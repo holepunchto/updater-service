@@ -60,6 +60,26 @@ test('basic - start main', async t => {
   await prClose.promise
 })
 
+test('error', async t => {
+  const file = path.join(__dirname, 'fixtures', 'error', 'main.js')
+  const child = spawn('pear', ['run', file])
+  t.teardown(() => child.kill('SIGKILL'))
+
+  const prError = promiseWithResolvers()
+  const prClose = promiseWithResolvers()
+
+  streamProcess(child, (data) => {
+    const lines = data.split('\n')
+    for (const line of lines) {
+      if (line.includes('Worker error')) prError.resolve(line)
+      if (line.startsWith('Worker closed')) prClose.resolve()
+    }
+  })
+  const err = await prError.promise
+  t.ok(err.includes('I am bot with error'), 'error message is correct')
+  await prClose.promise
+})
+
 test('error - uncaught exception', async t => {
   const file = path.join(__dirname, 'fixtures', 'error-uncaught-exception', 'main.js')
   const child = spawn('pear', ['run', file])

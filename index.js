@@ -46,7 +46,6 @@ function startWorker (runLink, onClose) {
   pipe.on('error', (err) => {
     console.log('Worker error', err)
     onClose()
-    pipe.destroy()
   })
   pipe.on('close', () => {
     console.log('Worker closed')
@@ -72,7 +71,6 @@ function startWorker (runLink, onClose) {
       else if (msg.tag === 'error') {
         console.log('Worker error', msg.data)
         onClose()
-        pipe.destroy()
       }
     }
   })
