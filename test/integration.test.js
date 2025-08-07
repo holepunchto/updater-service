@@ -103,6 +103,7 @@ test('error - uncaught exception', async t => {
 test('update', async t => {
   const stage1 = await pearStage(t, '.')
   t.ok(stage1.data.key, 'stage1 done')
+  const version = `${stage1.data.release}.${stage1.data.version}`
   const killSeeder = await pearSeed(t, stage1.data.key)
 
   const child = spawn('pear', ['run', `pear://${stage1.data.key}/test/fixtures/basic/main.js`])
@@ -124,7 +125,7 @@ test('update', async t => {
         readyMsg = line
         prReady.resolve(line)
       }
-      if (line.includes('Updating worker')) prUpdate.resolve(line)
+      if (line.includes(`Updating worker from ${version} to`)) prUpdate.resolve(line)
       if (line.includes('Closing old worker')) prClosingOldWorker.resolve(line)
       if (line.includes('Bot data') && line.includes('close')) prClosedOldWorker.resolve(line)
       if (line.startsWith('Worker closed')) prClose.resolve(line)
@@ -137,7 +138,7 @@ test('update', async t => {
   await fs.promises.writeFile(path.join(__dirname, 'tmp', 'foo.js'), `console.log(${Date.now()})`, 'utf-8')
   const stage2 = await pearStage(t, '.')
   t.is(stage2.data.key, stage1.data.key, 'stage2 done')
-  const version = `${stage2.data.release}.${stage2.data.version}`
+  const newVersion = `${stage2.data.release}.${stage2.data.version}`
 
   await prUpdate.promise
   await prClosingOldWorker.promise
@@ -147,13 +148,13 @@ test('update', async t => {
 
   await new Promise((resolve) => {
     const interval = setInterval(() => {
-      if (readyMsg.includes(version)) {
+      if (readyMsg.includes(newVersion)) {
         clearInterval(interval)
         resolve()
       }
     }, 100)
   })
-  t.ok(readyMsg.includes(version), 'worker updated to new version')
+  t.ok(readyMsg.includes(newVersion), 'worker updated to new version')
 
   await new Promise((resolve) => setTimeout(resolve, 1000))
   child.kill()
