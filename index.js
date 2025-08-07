@@ -10,7 +10,9 @@ function main (botPath) {
   let fork = Pear.config.fork
   let length = Pear.config.length
   let workerVersion = `${fork}.${length}`
-  let worker = startWorker(getLink(botPath, fork, length))
+
+  let updates = null
+  let worker = startWorker(getLink(botPath, fork, length), () => updates?.destroy())
   Pear.teardown(() => worker.close())
 
   const debouncedRestart = debounceify(async () => {
@@ -21,21 +23,21 @@ function main (botPath) {
     worker.close()
     await worker.closed
     console.log('Starting new worker')
-    worker = startWorker(getLink(botPath, fork, length))
+    worker = startWorker(getLink(botPath, fork, length), () => updates?.destroy())
     await worker.ready
     workerVersion = await worker.version
   })
 
-  const sub = Pear.updates((update) => {
+  updates = Pear.updates((update) => {
     if (!update.app) return
     fork = update.version.fork
     length = update.version.length
     debouncedRestart()
   })
-  Pear.teardown(() => sub.destroy())
+  Pear.teardown(() => updates.destroy())
 }
 
-function startWorker (runLink) {
+function startWorker (runLink, onClose) {
   const readyPr = promiseWithResolvers()
   const closedPr = promiseWithResolvers()
   const versionPr = promiseWithResolvers()
@@ -43,8 +45,8 @@ function startWorker (runLink) {
   const pipe = Pear.worker.run(runLink, Pear.config.args)
   pipe.on('error', (err) => {
     console.log('Worker error', err)
-    if (err.code === 'ENOTCONN') return
-    throw err
+    onClose()
+    pipe.destroy()
   })
   pipe.on('close', () => {
     console.log('Worker closed')
@@ -67,7 +69,11 @@ function startWorker (runLink) {
 
       if (msg.tag === 'ready') readyPr.resolve()
       else if (msg.tag === 'version') versionPr.resolve(msg.data)
-      else if (msg.tag === 'error') throw new Error(msg.data)
+      else if (msg.tag === 'error') {
+        console.log('Worker error', msg.data)
+        onClose()
+        pipe.destroy()
+      }
     }
   })
 

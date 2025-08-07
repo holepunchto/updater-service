@@ -1,8 +1,6 @@
 const test = require('brittle')
-const fs = require('fs')
 const path = require('path')
 const { spawn } = require('child_process')
-const tmpDir = require('test-tmp')
 const goodbye = require('graceful-goodbye')
 
 test('basic - direct run', async t => {
@@ -62,11 +60,25 @@ test('basic - start main', async t => {
   await prClose.promise
 })
 
-// async function untilExit (child, code) {
-//   return new Promise((resolve, reject) => {
-//     child.on('exit', (out) => +out === code ? resolve() : reject(new Error(out)))
-//   })
-// }
+test('error - uncaught exception', async t => {
+  const file = path.join(__dirname, 'fixtures', 'error-uncaught-exception', 'main.js')
+  const child = spawn('pear', ['run', file])
+  goodbye(() => child.kill('SIGKILL'))
+
+  const prError = promiseWithResolvers()
+  const prClose = promiseWithResolvers()
+
+  streamProcess(child, (data) => {
+    const lines = data.split('\n')
+    for (const line of lines) {
+      if (line.includes('Worker error')) prError.resolve(line)
+      if (line.startsWith('Worker closed')) prClose.resolve()
+    }
+  })
+  const err = await prError.promise
+  t.ok(err.includes('This is an uncaught exception'), 'error message is correct')
+  await prClose.promise
+})
 
 function streamProcess (proc, write) {
   proc.stderr.on('data', (data) => write(data.toString()))
