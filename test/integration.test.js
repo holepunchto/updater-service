@@ -1,6 +1,8 @@
 const test = require('brittle')
+const fs = require('fs')
 const path = require('path')
 const { spawn } = require('child_process')
+const tmpDir = require('test-tmp')
 const goodbye = require('graceful-goodbye')
 
 test('basic - direct run', async t => {
@@ -30,12 +32,14 @@ test('basic - start main', async t => {
 
   const prWorker = promiseWithResolvers()
   const prBot = promiseWithResolvers()
+  const prClose = promiseWithResolvers()
 
   streamProcess(child, (data) => {
     const lines = data.split('\n')
     for (const line of lines) {
       if (line.startsWith('Worker data')) prWorker.resolve(line)
       if (line.startsWith('I am bot')) prBot.resolve(line)
+      if (line.startsWith('Worker closed')) prClose.resolve()
     }
   })
   const resWorker = await prWorker.promise
@@ -54,7 +58,15 @@ test('basic - start main', async t => {
   const args = resBot.match(/\[(.*?)\]/)[1].split(',').map(arg => arg.trim().replace(/'/g, ''))
   t.is(args[0], 'hello', 'bot args[0] is correct')
   t.is(args[1], 'world', 'bot args[1] is correct')
+
+  await prClose.promise
 })
+
+// async function untilExit (child, code) {
+//   return new Promise((resolve, reject) => {
+//     child.on('exit', (out) => +out === code ? resolve() : reject(new Error(out)))
+//   })
+// }
 
 function streamProcess (proc, write) {
   proc.stderr.on('data', (data) => write(data.toString()))
