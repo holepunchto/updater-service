@@ -80,7 +80,7 @@ test('error - uncaught exception', async t => {
   await prClose.promise
 })
 
-test.skip('update', async t => {
+test('update', async t => {
   const stage1 = await pearStage(t, '.')
   t.ok(stage1.data.key, 'stage1 done')
   const killSeeder = await pearSeed(t, stage1.data.key)
@@ -126,8 +126,11 @@ test.skip('update', async t => {
   await prStartingNewWorker.promise
 
   await new Promise((resolve) => {
-    setInterval(() => {
-      if (readyMsg.includes(version)) resolve()
+    const interval = setInterval(() => {
+      if (readyMsg.includes(version)) {
+        clearInterval(interval)
+        resolve()
+      }
     }, 100)
   })
   t.ok(readyMsg.includes(version), 'worker updated to new version')
