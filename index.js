@@ -16,6 +16,7 @@ function main (botPath) {
   Pear.teardown(() => worker.close())
 
   const debouncedRestart = debounceify(async () => {
+    await new Promise(resolve => setTimeout(resolve, 1000)) // wait for the final update
     if (workerVersion === `${fork}.${length}`) return
     console.log(`Updating worker from ${workerVersion} to ${fork}.${length}`)
     await worker.ready
