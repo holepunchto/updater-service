@@ -1,12 +1,12 @@
 const test = require('brittle')
 const path = require('path')
+const fs = require('fs')
 const { spawn } = require('child_process')
-const goodbye = require('graceful-goodbye')
 
 test('basic - direct run', async t => {
   const file = path.join(__dirname, 'fixtures', 'basic', 'bot.js')
   const child = spawn('pear', ['run', file, 'hello', 'world'])
-  goodbye(() => child.kill('SIGKILL'))
+  t.teardown(() => child.kill('SIGKILL'))
 
   const pr = promiseWithResolvers()
   streamProcess(child, (data) => {
@@ -26,7 +26,7 @@ test('basic - direct run', async t => {
 test('basic - start main', async t => {
   const file = path.join(__dirname, 'fixtures', 'basic', 'main.js')
   const child = spawn('pear', ['run', file, 'hello', 'world'])
-  goodbye(() => child.kill('SIGKILL'))
+  t.teardown(() => child.kill('SIGKILL'))
 
   const prWorker = promiseWithResolvers()
   const prBot = promiseWithResolvers()
@@ -63,7 +63,7 @@ test('basic - start main', async t => {
 test('error - uncaught exception', async t => {
   const file = path.join(__dirname, 'fixtures', 'error-uncaught-exception', 'main.js')
   const child = spawn('pear', ['run', file])
-  goodbye(() => child.kill('SIGKILL'))
+  t.teardown(() => child.kill('SIGKILL'))
 
   const prError = promiseWithResolvers()
   const prClose = promiseWithResolvers()
@@ -79,6 +79,101 @@ test('error - uncaught exception', async t => {
   t.ok(err.includes('This is an uncaught exception'), 'error message is correct')
   await prClose.promise
 })
+
+test.skip('update', async t => {
+  const stage1 = await pearStage(t, '.')
+  t.ok(stage1.data.key, 'stage1 done')
+  const killSeeder = await pearSeed(t, stage1.data.key)
+
+  const child = spawn('pear', ['run', `pear://${stage1.data.key}/test/fixtures/basic/main.js`])
+  t.teardown(() => child.kill('SIGKILL'))
+
+  const prReady = promiseWithResolvers()
+  const prUpdate = promiseWithResolvers()
+  const prClosingOldWorker = promiseWithResolvers()
+  const prClosedOldWorker = promiseWithResolvers()
+  const prClose = promiseWithResolvers()
+  const prStartingNewWorker = promiseWithResolvers()
+
+  let readyMsg = ''
+
+  streamProcess(child, (data) => {
+    const lines = data.split('\n')
+    for (const line of lines) {
+      if (line.includes('Worker data') && line.includes('ready')) {
+        readyMsg = line
+        prReady.resolve(line)
+      }
+      if (line.includes('Updating worker')) prUpdate.resolve(line)
+      if (line.includes('Closing old worker')) prClosingOldWorker.resolve(line)
+      if (line.includes('Bot data') && line.includes('close')) prClosedOldWorker.resolve(line)
+      if (line.startsWith('Worker closed')) prClose.resolve(line)
+      if (line.includes('Starting new worker')) prStartingNewWorker.resolve(line)
+    }
+  })
+
+  await prReady.promise
+
+  await fs.promises.writeFile(path.join(__dirname, 'tmp', 'foo.js'), `console.log(${Date.now()})`, 'utf-8')
+  const stage2 = await pearStage(t, '.')
+  t.is(stage2.data.key, stage1.data.key, 'stage2 done')
+  const version = `${stage2.data.release}.${stage2.data.version}`
+
+  await prUpdate.promise
+  await prClosingOldWorker.promise
+  await prClosedOldWorker.promise
+  await prClose.promise
+  await prStartingNewWorker.promise
+
+  await new Promise((resolve) => {
+    setInterval(() => {
+      if (readyMsg.includes(version)) resolve()
+    }, 100)
+  })
+  t.ok(readyMsg.includes(version), 'worker updated to new version')
+
+  await new Promise((resolve) => setTimeout(resolve, 1000))
+  child.kill()
+  killSeeder()
+})
+
+async function pearStage (t, dir) {
+  const params = ['stage', '--json', 'test', dir]
+  const child = spawn('pear', params)
+  t.teardown(() => child.kill('SIGKILL'))
+  return untilTag(child, 'addendum')
+}
+
+async function pearSeed (t, key) {
+  const child = spawn('pear', ['seed', '--json', `pear://${key}`])
+  t.teardown(() => child.kill('SIGKILL'))
+  await untilTag(child, 'announced')
+  return () => child.kill('SIGKILL')
+}
+
+async function untilTag (child, tag, timeout = 600_000) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`Timeout waiting for ${tag}`))
+    }, timeout)
+    child.stdout.on('data', (data) => {
+      const lines = data.toString().split('\n')
+      lines.forEach((line) => {
+        try {
+          line = line.trim()
+          if (!line) return
+          const obj = JSON.parse(line)
+          if (obj.tag === tag) {
+            clearTimeout(timer)
+            resolve(obj)
+          }
+        } catch (err) {
+          console.log(err, line)
+        }
+      })
+    })
+  })
+}
 
 function streamProcess (proc, write) {
   proc.stderr.on('data', (data) => write(data.toString()))
