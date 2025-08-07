@@ -1,8 +1,6 @@
 const test = require('brittle')
-const fs = require('fs')
 const path = require('path')
 const { spawn } = require('child_process')
-const tmpDir = require('test-tmp')
 const goodbye = require('graceful-goodbye')
 
 test('basic - direct run', async t => {
@@ -57,12 +55,6 @@ test('basic - start main', async t => {
   t.is(args[0], 'hello', 'bot args[0] is correct')
   t.is(args[1], 'world', 'bot args[1] is correct')
 })
-
-async function untilExit (child) {
-  return new Promise((resolve, reject) => {
-    child.on('exit', (code) => +code ? reject(new Error(code)) : resolve())
-  })
-}
 
 function streamProcess (proc, write) {
   proc.stderr.on('data', (data) => write(data.toString()))
