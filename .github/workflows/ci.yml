@@ -1,15 +1,14 @@
 name: CI
 
 on:
-  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
   push:
     branches:
       - main
   pull_request:
-
-permissions:
-  contents: read
-  packages: read
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
 
 jobs:
   test:
