@@ -4,9 +4,9 @@
 
 ## Sample bot
 - create `index.js` as the main entry point, then run `botService.main(<path-to-bot>)`
-- create `bot.js`, then implement the bot handler inside `botService.run(<bot-handler>)`
-  - `bot-handler` receives params `args`
-  - `bot-handler` should return a `close` function to teardown the bot 
+- create `bot.js`, then implement the bot runner inside `botService.run(<bot-runner>)`
+  - `bot-runner` receives params `args`
+  - `bot-runner` should return a `close` function to teardown the bot 
 
 
 ```js
@@ -17,7 +17,7 @@ botService.main('bot.js')
 // bot.js
 const botService = require('@holepunchto/bot-service')
 botService.run(async (args) => {
-  // bot handler goes here
+  // bot runner goes here
   const interval = setInterval(() => {
     console.log('I am bot', args)
   }, 1000)
