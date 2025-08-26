@@ -105,9 +105,9 @@ function promiseWithResolvers () {
 // worker
 //
 
-async function run (botHandler) {
+async function run (botRunner) {
   const pipe = Pear.worker.pipe()
-  if (pipe) { // handle uncaught errors from botHandler
+  if (pipe) { // handle uncaught errors from botRunner
     process.on('uncaughtException', (err) => {
       pipe.write(JSON.stringify({ tag: 'error', data: `${err?.stack || err}` }) + '\n')
       pipe.end()
@@ -118,9 +118,10 @@ async function run (botHandler) {
     })
   }
 
-  const bot = await botHandler(Pear.config.args)
+  const runner = await botRunner(Pear.config.args)
 
   if (!pipe) return
+
   pipe.on('data', async (data) => {
     const lines = data.toString().split('\n')
     console.log('Bot data', lines)
@@ -136,8 +137,8 @@ async function run (botHandler) {
       })()
 
       if (msg.tag === 'close') {
-        if (typeof bot?.close === 'function') {
-          await bot.close()
+        if (typeof runner?.close === 'function') {
+          await runner.close()
         } else {
           console.log('Missing close function')
         }
