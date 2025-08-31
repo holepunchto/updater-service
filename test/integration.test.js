@@ -101,7 +101,8 @@ test('error - uncaught exception', async t => {
 })
 
 test('update', async t => {
-  const stage1 = await pearStage(t, '.')
+  const channel = `update-${Date.now()}`
+  const stage1 = await pearStage(t, channel, '.')
   t.ok(stage1.data.key, 'stage1 done')
   const version = `${stage1.data.release}.${stage1.data.version}`
   const killSeeder = await pearSeed(t, stage1.data.key)
@@ -136,7 +137,7 @@ test('update', async t => {
   await prReady.promise
 
   await fs.promises.writeFile(path.join(__dirname, 'tmp', 'foo.js'), `console.log(${Date.now()})`, 'utf-8')
-  const stage2 = await pearStage(t, '.')
+  const stage2 = await pearStage(t, channel, '.')
   t.is(stage2.data.key, stage1.data.key, 'stage2 done')
   const newVersion = `${stage2.data.release}.${stage2.data.version}`
 
@@ -161,8 +162,8 @@ test('update', async t => {
   killSeeder()
 })
 
-async function pearStage (t, dir) {
-  const params = ['stage', '--json', 'test', dir]
+async function pearStage (t, channel, dir) {
+  const params = ['stage', '--json', channel, dir]
   const child = spawn('pear', params)
   t.teardown(() => child.kill('SIGKILL'))
   return untilTag(child, 'addendum')
