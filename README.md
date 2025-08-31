@@ -3,18 +3,18 @@
 - Auto restart bot on update (via Pear.updates)
 
 ## Sample bot
-- create `index.js` as the main entry point, then run `botService.main(<path-to-bot>)`
-- create `bot.js`, then implement the bot runner inside `botService.run(<bot-runner>)`
+- create `main.js` as the main entry point, then run `botService.main(<path-to-bot>)`
+- create `index.js`, then implement the bot runner inside `botService.run(<bot-runner>)`
   - `bot-runner` receives params `args`
   - `bot-runner` should return a `close` function to teardown the bot 
 
 
 ```js
-// index.js
+// main.js
 const botService = require('@holepunchto/bot-service')
-botService.main('bot.js')
+botService.main('index.js')
 
-// bot.js
+// index.js
 const botService = require('@holepunchto/bot-service')
 botService.run(async (args) => {
   // bot runner goes here
