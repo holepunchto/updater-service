@@ -2,13 +2,16 @@
 const process = require('process')
 const debounceify = require('debounceify')
 
+const DEV = Pear.config.key === null
+
 //
 // main
 //
 
-const DELAY_UPDATE = 60000
+const DELAY_UPDATE = DEV ? 1000 : 60000
 
-function main (botPath) {
+function main (botPath, watchPrefixes = ['/src']) {
+  let diff = []
   let fork = Pear.config.fork
   let length = Pear.config.length
   let workerVersion = `${fork}.${length}`
@@ -19,7 +22,8 @@ function main (botPath) {
 
   const debouncedRestart = debounceify(async () => {
     await new Promise(resolve => setTimeout(resolve, DELAY_UPDATE)) // wait for the final update
-    if (workerVersion === `${fork}.${length}`) return
+    if (DEV && !hasUpdateDev(watchPrefixes, diff)) return
+    if (!DEV && workerVersion === `${fork}.${length}`) return
     console.log(`Updating worker from ${workerVersion} to ${fork}.${length}`)
     await worker.ready
     console.log('Closing old worker')
@@ -33,6 +37,7 @@ function main (botPath) {
 
   updates = Pear.updates((update) => {
     if (!update.app) return
+    diff = update.diff
     fork = update.version.fork
     length = update.version.length
     debouncedRestart()
@@ -87,7 +92,7 @@ function startWorker (runLink, onClose) {
 }
 
 function getLink (botPath, fork, length) {
-  if (Pear.config.key === null) return botPath // dev mode
+  if (DEV) return botPath // dev mode
 
   const url = new URL(botPath, `${Pear.config.applink}/`)
   url.host = `${fork}.${length}.${url.host}`
@@ -101,6 +106,15 @@ function promiseWithResolvers () {
     resolvers.reject = reject
   })
   return { promise, ...resolvers }
+}
+
+function hasUpdateDev (watchPrefixes, diff) {
+  for (const { key } of diff) {
+    if (!key.endsWith('.js')) continue
+    if (!watchPrefixes.some(prefix => key.startsWith(prefix))) continue
+    return true
+  }
+  return false
 }
 
 //
