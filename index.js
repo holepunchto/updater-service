@@ -37,7 +37,7 @@ function main (botPath, watchPrefixes = ['/src']) {
 
   updates = Pear.updates((update) => {
     if (!update.app) return
-    diff = update.diff
+    diff = update.diff || []
     fork = update.version.fork
     length = update.version.length
     debouncedRestart()
