@@ -183,7 +183,7 @@ function hasUpdateDev (watchPrefixes, diff) {
 
 /**
  * @type {function(
- *  function(Args, { write?: Write }): Promise<{ write?: Write, close?: Close }>
+ *  function(Args, { write: Write }): Promise<{ write?: Write, close?: Close }>
  * ): Promise}
  */
 async function run (botRunner) {
