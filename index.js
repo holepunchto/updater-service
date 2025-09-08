@@ -223,7 +223,7 @@ async function run (botRunner) {
         }
       } else if (obj.tag === 'close') {
         if (typeof runner?.close === 'function') {
-          runner.close(obj.data)
+          runner.close()
         } else {
           console.log('Missing close function')
         }
@@ -232,6 +232,12 @@ async function run (botRunner) {
         console.log('Unknown message', obj)
       }
     }
+  })
+  pipe.on('error', () => {
+    if (typeof runner?.close === 'function') runner.close()
+  })
+  pipe.on('close', () => {
+    if (typeof runner?.close === 'function') runner.close()
   })
   pipe.write(JSON.stringify({ tag: 'version', data: `${Pear.config.fork}.${Pear.config.length}` }) + '\n')
   pipe.write(JSON.stringify({ tag: 'ready' }) + '\n')
