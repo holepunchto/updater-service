@@ -183,7 +183,7 @@ function hasUpdateDev (watchPrefixes, diff) {
 
 /**
  * @type {function(
- *  function(Args, { write: Write }): Promise<{ write?: Write, close?: Close }>
+ *  function(Args, { write?: Write }): Promise<{ write?: Write, close?: Close }>
  * ): Promise}
  */
 async function run (botRunner) {
@@ -201,8 +201,10 @@ async function run (botRunner) {
 
   const runner = await botRunner(
     Pear.config.args,
-    pipe && {
-      write: (data) => pipe.write(JSON.stringify({ tag: 'data', data }) + '\n')
+    {
+      ...(pipe && {
+        write: (data) => pipe.write(JSON.stringify({ tag: 'data', data }) + '\n')
+      })
     }
   )
 
