@@ -31,7 +31,7 @@ const DEV = Pear.config.key === null
  */
 function main (botPath, opts = {}) {
   const {
-    delayUpdate = DEV ? 1000 : 60000,
+    delayUpdate = DEV ? 1000 : (Math.floor(Math.random() * (30 - 10 + 1)) + 10) * 1000, // 10-30s
     watchPrefixes = ['/src'],
     onData = () => undefined,
     onError = () => undefined
