@@ -1,3 +1,10 @@
+/**
+ * @typedef {string[]} Args
+ * @typedef {function(string): void} OnData
+ * @typedef {function(Error): void} OnError
+ * @typedef {function(string): Promise} Write
+ * @typedef {function(): Promise} Close
+ */
 /* global Pear */
 const process = require('process')
 const debounceify = require('debounceify')
@@ -8,89 +15,140 @@ const DEV = Pear.config.key === null
 // main
 //
 
-const DELAY_UPDATE = DEV ? 1000 : 60000
+/**
+ * @type {function(string, {
+ *   delayUpdate?: number,
+ *   watchPrefixes?: string[],
+ *   onData?: OnData,
+ *   onError?: OnError,
+ * }): {
+ *   ready: Promise<boolean>,
+ *   closed: Promise<boolean>,
+ *   version: Promise<string>,
+ *   write: Write,
+ *   close: Close
+ * }}
+ */
+function main (botPath, opts = {}) {
+  const {
+    delayUpdate = DEV ? 1000 : 60000,
+    watchPrefixes = ['/src'],
+    onData = () => undefined,
+    onError = () => undefined
+  } = opts
 
-function main (botPath, watchPrefixes = ['/src']) {
   let diff = []
   let fork = Pear.config.fork
   let length = Pear.config.length
   let workerVersion = `${fork}.${length}`
-
   let updates = null
-  let worker = startWorker(getLink(botPath, fork, length), () => updates?.destroy())
-  Pear.teardown(() => worker.close())
+
+  const close = () => {
+    updates?.destroy()
+    worker.close()
+  }
+  const start = () => startWorker(
+    getLink(botPath, fork, length),
+    (data) => onData(data),
+    (err) => {
+      close()
+      onError(err)
+    }
+  )
+
+  let worker = start()
+  Pear.teardown(() => close())
 
   const debouncedRestart = debounceify(async () => {
-    await new Promise(resolve => setTimeout(resolve, DELAY_UPDATE)) // wait for the final update
+    await new Promise(resolve => setTimeout(resolve, delayUpdate)) // wait for the final update
     if (DEV && !hasUpdateDev(watchPrefixes, diff)) return
     if (!DEV && workerVersion === `${fork}.${length}`) return
+
     console.log(`Updating worker from ${workerVersion} to ${fork}.${length}`)
     await worker.ready
     console.log('Closing old worker')
     worker.close()
     await worker.closed
     console.log('Starting new worker')
-    worker = startWorker(getLink(botPath, fork, length), () => updates?.destroy())
+    worker = start()
     await worker.ready
     workerVersion = await worker.version
   })
 
   updates = Pear.updates((update) => {
-    if (!update.app) return
     diff = update.diff || []
     fork = update.version.fork
     length = update.version.length
     debouncedRestart()
   })
-  Pear.teardown(() => updates.destroy())
+
+  return {
+    ready: worker.ready,
+    closed: worker.closed,
+    version: worker.version,
+    write: (data) => worker.write(data),
+    close: () => close()
+  }
 }
 
-function startWorker (runLink, onClose) {
+/**
+ * @type {function(string, OnData, OnError): {
+ *   ready: Promise<boolean>,
+ *   closed: Promise<boolean>,
+ *   version: Promise<string>,
+ *   write: Write,
+ *   close: Close
+ * }}
+ */
+function startWorker (runLink, onData, onError) {
   const readyPr = promiseWithResolvers()
   const closedPr = promiseWithResolvers()
   const versionPr = promiseWithResolvers()
 
   const pipe = Pear.worker.run(runLink, Pear.config.args)
+  pipe.on('data', (data) => {
+    const lines = data.toString().split('\n')
+    for (let msg of lines) {
+      msg = msg.trim()
+      if (!msg) continue
+      const obj = parseMsg(msg)
+
+      if (obj.tag === 'ready') {
+        console.log('Worker ready')
+        readyPr.resolve()
+      } else if (obj.tag === 'version') {
+        console.log('Worker version', obj.data)
+        versionPr.resolve(obj.data)
+      } else if (obj.tag === 'error') {
+        console.log('Worker error', obj.data)
+        onError(obj.data)
+      } else if (obj.tag === 'data') {
+        onData(obj.data)
+      } else {
+        console.log('Worker unknown message', obj)
+      }
+    }
+  })
   pipe.on('error', (err) => {
     console.log('Worker error', err)
-    onClose()
+    onError(`${err?.stack || err}`)
   })
   pipe.on('close', () => {
     console.log('Worker closed')
     readyPr.resolve()
     closedPr.resolve()
   })
-  pipe.on('data', (data) => {
-    const lines = data.toString().split('\n')
-    console.log('Worker data', lines)
-    for (let msg of lines) {
-      msg = msg.trim()
-      if (!msg) continue
-      msg = (() => {
-        try {
-          return JSON.parse(msg)
-        } catch {
-          return { tag: 'unknown', data: msg }
-        }
-      })()
-
-      if (msg.tag === 'ready') readyPr.resolve()
-      else if (msg.tag === 'version') versionPr.resolve(msg.data)
-      else if (msg.tag === 'error') {
-        console.log('Worker error', msg.data)
-        onClose()
-      }
-    }
-  })
 
   return {
     ready: readyPr.promise,
     closed: closedPr.promise,
     version: versionPr.promise,
+    write: (data) => pipe.write(JSON.stringify({ tag: 'data', data }) + '\n'),
     close: () => pipe.write(JSON.stringify({ tag: 'close' }) + '\n')
   }
 }
 
+/** @type {function(string, number, number): string} **/
 function getLink (botPath, fork, length) {
   if (DEV) return botPath // dev mode
 
@@ -99,6 +157,7 @@ function getLink (botPath, fork, length) {
   return url.href
 }
 
+/** @type {function(): { promise: Promise, resolve: function, reject: function }} **/
 function promiseWithResolvers () {
   const resolvers = {}
   const promise = new Promise((resolve, reject) => {
@@ -108,6 +167,7 @@ function promiseWithResolvers () {
   return { promise, ...resolvers }
 }
 
+/** @type {function(string[], { key: string }[]): boolean} **/
 function hasUpdateDev (watchPrefixes, diff) {
   for (const { key } of diff) {
     if (!key.endsWith('.js')) continue
@@ -121,6 +181,11 @@ function hasUpdateDev (watchPrefixes, diff) {
 // worker
 //
 
+/**
+ * @type {function(
+ *  function(Args, { write: Write }): Promise<{ write?: Write, close?: Close }>
+ * ): Promise}
+ */
 async function run (botRunner) {
   const pipe = Pear.worker.pipe()
   if (pipe) { // handle uncaught errors from botRunner
@@ -134,36 +199,50 @@ async function run (botRunner) {
     })
   }
 
-  const runner = await botRunner(Pear.config.args)
+  const runner = await botRunner(
+    Pear.config.args,
+    pipe && {
+      write: (data) => pipe.write(JSON.stringify({ tag: 'data', data }) + '\n')
+    }
+  )
 
   if (!pipe) return
 
   pipe.on('data', async (data) => {
     const lines = data.toString().split('\n')
-    console.log('Bot data', lines)
     for (let msg of lines) {
       msg = msg.trim()
       if (!msg) continue
-      msg = (() => {
-        try {
-          return JSON.parse(msg)
-        } catch {
-          return { tag: 'unknown', data: msg }
-        }
-      })()
+      const obj = parseMsg(msg)
 
-      if (msg.tag === 'close') {
+      if (obj.tag === 'data') {
+        if (typeof runner?.write === 'function') {
+          runner.write(obj.data)
+        } else {
+          console.log('Missing write function')
+        }
+      } else if (obj.tag === 'close') {
         if (typeof runner?.close === 'function') {
-          await runner.close()
+          runner.close(obj.data)
         } else {
           console.log('Missing close function')
         }
         pipe.end()
+      } else {
+        console.log('Unknown message', obj)
       }
     }
   })
   pipe.write(JSON.stringify({ tag: 'version', data: `${Pear.config.fork}.${Pear.config.length}` }) + '\n')
   pipe.write(JSON.stringify({ tag: 'ready' }) + '\n')
+}
+
+function parseMsg (msg) {
+  try {
+    return JSON.parse(msg)
+  } catch {
+    return { tag: 'unknown', data: msg }
+  }
 }
 
 module.exports = { main, run }

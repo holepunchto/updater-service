@@ -17,6 +17,7 @@ test('basic - direct run', async t => {
   })
   const res = await pr.promise
   child.kill()
+
   t.ok(res.startsWith('I am bot'), 'output is correct')
   const args = res.match(/\[(.*?)\]/)[1].split(',').map(arg => arg.trim().replace(/'/g, ''))
   t.is(args[0], 'hello', 'args[0] is correct')
@@ -35,7 +36,7 @@ test('basic - start main', async t => {
   streamProcess(child, (data) => {
     const lines = data.split('\n')
     for (const line of lines) {
-      if (line.startsWith('Worker data')) prWorker.resolve(line)
+      if (line.startsWith('Worker version')) prWorker.resolve(line)
       if (line.startsWith('I am bot')) prBot.resolve(line)
       if (line.startsWith('Worker closed')) prClose.resolve()
     }
@@ -44,14 +45,7 @@ test('basic - start main', async t => {
   const resBot = await prBot.promise
   child.kill()
 
-  t.ok(resWorker.startsWith('Worker data'), 'worker output is correct')
-  const workerData = JSON.parse(resWorker.match(/\[(.*)\]/)[0].replace(/"/g, '\\"').replace(/'/g, '"'))
-    .filter(item => item.trim()).map((item) => JSON.parse(item))
-  t.is(workerData.length, 2, 'worker data length is correct')
-  t.is(workerData[0].tag, 'version', 'workerData[0].tag is correct')
-  t.is(workerData[0].data, '0.0', 'workerData[0].data is correct')
-  t.is(workerData[1].tag, 'ready', 'workerData[1].tag is correct')
-
+  t.is(resWorker, 'Worker version 0.0', 'worker output is correct')
   t.ok(resBot.startsWith('I am bot'), 'bot output is correct')
   const args = resBot.match(/\[(.*?)\]/)[1].split(',').map(arg => arg.trim().replace(/'/g, ''))
   t.is(args[0], 'hello', 'bot args[0] is correct')
@@ -105,36 +99,31 @@ test('update', async t => {
   const stage1 = await pearStage(t, channel, '.')
   t.ok(stage1.data.key, 'stage1 done')
   const version = `${stage1.data.release}.${stage1.data.version}`
-  const killSeeder = await pearSeed(t, stage1.data.key)
 
   const child = spawn('pear', ['run', `pear://${stage1.data.key}/test/fixtures/basic/main.js`])
   t.teardown(() => child.kill('SIGKILL'))
 
+  let versionMsg = ''
   const prReady = promiseWithResolvers()
   const prUpdate = promiseWithResolvers()
-  const prClosingOldWorker = promiseWithResolvers()
-  const prClosedOldWorker = promiseWithResolvers()
-  const prClose = promiseWithResolvers()
+  const prClosingWorker = promiseWithResolvers()
+  const prRestartWorker = promiseWithResolvers()
   const prStartingNewWorker = promiseWithResolvers()
-
-  let readyMsg = ''
 
   streamProcess(child, (data) => {
     const lines = data.split('\n')
     for (const line of lines) {
-      if (line.includes('Worker data') && line.includes('ready')) {
-        readyMsg = line
-        prReady.resolve(line)
-      }
+      if (line.includes('Worker version')) versionMsg = line
+      if (line.includes('Worker ready')) prReady.resolve(line)
       if (line.includes(`Updating worker from ${version} to`)) prUpdate.resolve(line)
-      if (line.includes('Closing old worker')) prClosingOldWorker.resolve(line)
-      if (line.includes('Bot data') && line.includes('close')) prClosedOldWorker.resolve(line)
-      if (line.startsWith('Worker closed')) prClose.resolve(line)
+      if (line.includes('Closing old worker')) prClosingWorker.resolve(line)
+      if (line.includes('Worker restart')) prRestartWorker.resolve(line)
       if (line.includes('Starting new worker')) prStartingNewWorker.resolve(line)
     }
   })
 
   await prReady.promise
+  t.is(versionMsg, `Worker version ${version}`, `worker started on version ${version}`)
 
   await fs.promises.writeFile(path.join(__dirname, 'tmp', 'foo.js'), `console.log(${Date.now()})`, 'utf-8')
   const stage2 = await pearStage(t, channel, '.')
@@ -142,24 +131,21 @@ test('update', async t => {
   const newVersion = `${stage2.data.release}.${stage2.data.version}`
 
   await prUpdate.promise
-  await prClosingOldWorker.promise
-  await prClosedOldWorker.promise
-  await prClose.promise
+  await prClosingWorker.promise
+  await prRestartWorker.promise
   await prStartingNewWorker.promise
 
   await new Promise((resolve) => {
     const interval = setInterval(() => {
-      if (readyMsg.includes(newVersion)) {
+      if (versionMsg.includes(newVersion)) {
         clearInterval(interval)
         resolve()
       }
     }, 100)
   })
-  t.ok(readyMsg.includes(newVersion), 'worker updated to new version')
+  t.is(versionMsg, `Worker version ${newVersion}`, `worker updated to new version ${newVersion}`)
 
-  await new Promise((resolve) => setTimeout(resolve, 1000))
-  child.kill()
-  killSeeder()
+  child.kill('SIGKILL')
 })
 
 async function pearStage (t, channel, dir) {
@@ -167,13 +153,6 @@ async function pearStage (t, channel, dir) {
   const child = spawn('pear', params)
   t.teardown(() => child.kill('SIGKILL'))
   return untilTag(child, 'addendum')
-}
-
-async function pearSeed (t, key) {
-  const child = spawn('pear', ['seed', '--json', `pear://${key}`])
-  t.teardown(() => child.kill('SIGKILL'))
-  await untilTag(child, 'announced')
-  return () => child.kill('SIGKILL')
 }
 
 async function untilTag (child, tag, timeout = 600_000) {
