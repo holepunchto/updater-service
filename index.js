@@ -202,9 +202,7 @@ async function run (botRunner) {
   const runner = await botRunner(
     Pear.config.args,
     {
-      ...(pipe && {
-        write: (data) => pipe.write(JSON.stringify({ tag: 'data', data }) + '\n')
-      })
+      write: (data) => pipe?.write(JSON.stringify({ tag: 'data', data }) + '\n')
     }
   )
 
