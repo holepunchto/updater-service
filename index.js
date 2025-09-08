@@ -43,21 +43,17 @@ function main (botPath, opts = {}) {
   let workerVersion = `${fork}.${length}`
   let updates = null
 
-  const close = () => {
-    updates?.destroy()
-    worker.close()
-  }
   const start = () => startWorker(
     getLink(botPath, fork, length),
     (data) => onData(data),
     (err) => {
-      close()
+      updates?.destroy()
       onError(err)
     }
   )
 
   let worker = start()
-  Pear.teardown(() => close())
+  Pear.teardown(() => worker.close())
 
   const debouncedRestart = debounceify(async () => {
     await new Promise(resolve => setTimeout(resolve, delayUpdate)) // wait for the final update
@@ -81,13 +77,17 @@ function main (botPath, opts = {}) {
     length = update.version.length
     debouncedRestart()
   })
+  Pear.teardown(() => updates?.destroy())
 
   return {
     ready: worker.ready,
     closed: worker.closed,
     version: worker.version,
     write: (data) => worker.write(data),
-    close: () => close()
+    close: () => {
+      updates?.destroy()
+      worker.close()
+    }
   }
 }
 
