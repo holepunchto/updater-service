@@ -208,7 +208,7 @@ async function run (botRunner) {
 
   if (!pipe) return
 
-  pipe.on('data', async (data) => {
+  pipe.on('data', (data) => {
     const lines = data.toString().split('\n')
     for (let msg of lines) {
       msg = msg.trim()
