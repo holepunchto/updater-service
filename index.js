@@ -1,6 +1,7 @@
 /**
  * @typedef {function(string): void} OnData
  * @typedef {function(string): void} OnError
+ * @typedef {function(): void} OnClose
  * @typedef {function(string): Promise} Write
  * @typedef {function(): Promise} Close
  */
@@ -46,6 +47,11 @@ function main (botPath, opts = {}) {
     (err) => {
       updates?.destroy()
       onError(err)
+      if (pipe) pipe.end()
+    },
+    () => {
+      updates?.destroy()
+      if (pipe) pipe.end()
     }
   )
   let worker = start()
@@ -101,7 +107,7 @@ function main (botPath, opts = {}) {
 }
 
 /**
- * @type {function(string, OnData, OnError): {
+ * @type {function(string, OnData, OnError, OnClose): {
  *   ready: Promise<boolean>,
  *   closed: Promise<boolean>,
  *   version: Promise<string>,
@@ -109,7 +115,7 @@ function main (botPath, opts = {}) {
  *   close: Close
  * }}
  */
-function startWorker (runLink, onData, onError) {
+function startWorker (runLink, onData, onError, onClose) {
   const readyPr = promiseWithResolvers()
   const closedPr = promiseWithResolvers()
   const versionPr = promiseWithResolvers()
@@ -146,6 +152,7 @@ function startWorker (runLink, onData, onError) {
     console.log('Worker closed')
     readyPr.resolve()
     closedPr.resolve()
+    onClose()
   })
 
   return {

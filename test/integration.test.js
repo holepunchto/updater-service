@@ -150,6 +150,39 @@ test('update', async t => {
   child.kill()
 })
 
+test('user app starts bot-service in a worker', async t => {
+  const channel = `update-${Date.now()}`
+
+  const parentDir = path.join(__dirname, 'fixtures', 'worker', 'parent')
+
+  const stageParent = await pearStage(t, channel, parentDir)
+  t.ok(stageParent.data.key, 'stageParent done')
+  const stageChild = await pearStage(t, channel, '.')
+  t.ok(stageChild.data.key, 'stageChild done')
+
+  const child = spawn('pear', ['run', `pear://${stageParent.data.key}`, stageChild.data.key])
+  t.teardown(() => child.kill('SIGKILL'))
+
+  const prData = promiseWithResolvers()
+  const prError = promiseWithResolvers()
+  const prClose = promiseWithResolvers()
+
+  streamProcess(child, (data) => {
+    const lines = data.split('\n')
+    for (const line of lines) {
+      if (line.includes('I am bot')) prData.resolve()
+      if (line.includes('Test parent error')) prError.resolve(line)
+      if (line.includes('Test parent closed')) prClose.resolve()
+    }
+  })
+
+  await prData.promise
+  await prError.promise
+  await prClose.promise
+
+  child.kill()
+})
+
 async function pearStage (t, channel, dir) {
   const params = ['stage', '--json', channel, dir]
   const child = spawn('pear', params)

@@ -1,0 +1,5 @@
+{
+  "name": "@holepunchto/bot-service-parent",
+  "main": "index.js",
+  "pear": {}
+}
