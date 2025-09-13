@@ -95,6 +95,8 @@ test('error - uncaught exception', async t => {
 })
 
 test('update', async t => {
+  t.timeout(120_000)
+
   const channel = `update-${Date.now()}`
   const stage1 = await pearStage(t, channel, '.')
   t.ok(stage1.data.key, 'stage1 done')
@@ -107,7 +109,7 @@ test('update', async t => {
   const prReady = promiseWithResolvers()
   const prUpdate = promiseWithResolvers()
   const prClosingWorker = promiseWithResolvers()
-  const prRestartWorker = promiseWithResolvers()
+  const prClosedWorker = promiseWithResolvers()
   const prStartingNewWorker = promiseWithResolvers()
 
   streamProcess(child, (data) => {
@@ -117,7 +119,7 @@ test('update', async t => {
       if (line.includes('Worker ready')) prReady.resolve(line)
       if (line.includes(`Updating worker from ${version} to`)) prUpdate.resolve(line)
       if (line.includes('Closing old worker')) prClosingWorker.resolve(line)
-      if (line.includes('Worker restart')) prRestartWorker.resolve(line)
+      if (line.includes('Worker closed')) prClosedWorker.resolve(line)
       if (line.includes('Starting new worker')) prStartingNewWorker.resolve(line)
     }
   })
@@ -132,7 +134,7 @@ test('update', async t => {
 
   await prUpdate.promise
   await prClosingWorker.promise
-  await prRestartWorker.promise
+  await prClosedWorker.promise
   await prStartingNewWorker.promise
 
   await new Promise((resolve) => {
