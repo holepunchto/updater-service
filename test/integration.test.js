@@ -147,7 +147,7 @@ test('update', async t => {
   })
   t.is(versionMsg, `Worker version ${newVersion}`, `worker updated to new version ${newVersion}`)
 
-  child.kill('SIGKILL')
+  child.kill()
 })
 
 async function pearStage (t, channel, dir) {
