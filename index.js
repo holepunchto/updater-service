@@ -58,6 +58,7 @@ function main (botPath, opts = {}) {
   Pear.teardown(() => close())
 
   const debouncedRestart = debounceify(async () => {
+    console.log(`Detected update, waiting for ${delayUpdate}ms before restarting...`)
     await new Promise(resolve => setTimeout(resolve, delayUpdate)) // wait for the final update
     if (DEV && !hasUpdateDev(watchPrefixes, diff)) return
     if (!DEV && workerVersion === `${fork}.${length}`) return
