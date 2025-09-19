@@ -1,5 +1,5 @@
-const botService = require('../../../index')
+import BotService from '../../../index'
 
-botService.run(() => {
+BotService.run(() => {
   throw new Error('I am bot with error')
 })

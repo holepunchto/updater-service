@@ -1,7 +1,7 @@
 /* global Pear */
-const botService = require('../../../index')
+import BotService from '../../../index'
 
-botService.run(async (args) => {
+BotService.run(async (args) => {
   const interval = setInterval(() => {
     console.log('I am bot', args)
   }, 1000)

@@ -1,6 +1,6 @@
-const path = require('path')
-const botService = require('../../../../index')
+import path from 'path'
+import BotService from '../../../../index'
 
-botService.main(path.join('.', __dirname, 'bot.js'), {
-  delayUpdate: 1000
-})
+const dirname = path.join('.', import.meta.url.substring('pear://dev'.length), '..')
+
+BotService.main(path.join(dirname, 'bot.js'), { delayUpdate: 1000 })

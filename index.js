@@ -5,8 +5,8 @@
  * @typedef {function(): Promise} Close
  */
 /* global Pear */
-const process = require('process')
-const debounceify = require('debounceify')
+import 'bare-process/global'
+import debounceify from 'debounceify'
 
 const DEV = Pear.config.key === null
 
@@ -264,4 +264,5 @@ function parseMsg (msg) {
 
 function noop () {}
 
-module.exports = { main, run }
+const BotService = { main, run }
+export default BotService
