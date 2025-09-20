@@ -1,5 +1,5 @@
 /* global Pear */
-import BotService from '../../../index.js'
+import BotService from '../../../index'
 
 BotService.run(async (args) => {
   const interval = setInterval(() => {
