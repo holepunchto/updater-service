@@ -15,6 +15,7 @@ test('basic - direct run', async t => {
   streamProcess(child, (data) => {
     const lines = data.split('\n')
     for (const line of lines) {
+      console.log('🚀 ~ line:', line)
       if (line.startsWith('I am bot')) pr.resolve(line)
     }
   })
