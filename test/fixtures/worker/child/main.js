@@ -1,6 +1,7 @@
+/* global Pear */
 import path from 'path'
 import BotService from '../../../../index'
 
-const dirname = path.join('.', import.meta.url.substring('pear://dev'.length), '..')
+const dirname = path.join(Pear.config.linkData, '..')
 
 BotService.main(path.join(dirname, 'bot.js'), { delayUpdate: 1000 })

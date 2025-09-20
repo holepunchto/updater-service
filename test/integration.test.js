@@ -3,7 +3,7 @@ import path from 'path'
 import fs from 'fs'
 import { spawn } from 'child_process'
 
-const dirname = path.join(import.meta.url, '..')
+const dirname = path.join(import.meta.url, '..').substring('file:'.length)
 
 test('basic - direct run', async t => {
   const file = path.join(dirname, 'fixtures', 'basic', 'bot.js')
@@ -96,7 +96,7 @@ test('error - uncaught exception', async t => {
   await prClose.promise
 })
 
-test.skip('update', async t => {
+test('update', async t => {
   t.timeout(120_000)
 
   const channel = `update-${Date.now()}`
