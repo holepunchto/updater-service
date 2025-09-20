@@ -18,10 +18,10 @@
     "debounceify": "^1.1.0"
   },
   "devDependencies": {
-    "bare-fs": "^4.1.6",
+    "bare-fs": "^4.4.4",
     "bare-path": "^3.0.0",
-    "bare-subprocess": "^5.1.0",
-    "brittle": "^3.17.1",
+    "bare-subprocess": "^5.1.2",
+    "brittle": "^3.19.0",
     "pear-interface": "^1.1.0",
     "standard": "^17.1.2",
     "test-tmp": "^1.4.0"
