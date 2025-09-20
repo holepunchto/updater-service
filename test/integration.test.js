@@ -8,7 +8,7 @@ const dirname = path.join(import.meta.url, '..')
 test('basic - direct run', async t => {
   const file = path.join(dirname, 'fixtures', 'basic', 'bot.js')
   console.log('🚀 ~ file:', file)
-  const child = spawn('pear', ['run', file, 'hello', 'world'])
+  const child = spawn('pear', ['run', file, 'hello', 'world'], { shell: true })
   t.teardown(() => child.kill('SIGKILL'))
 
   const pr = promiseWithResolvers()
