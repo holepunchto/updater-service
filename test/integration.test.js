@@ -7,15 +7,13 @@ const dirname = path.join(import.meta.url, '..')
 
 test('basic - direct run', async t => {
   const file = path.join(dirname, 'fixtures', 'basic', 'bot.js')
-  console.log('🚀 ~ file:', file)
-  const child = spawn('pear', ['run', file, 'hello', 'world'], { shell: true })
+  const child = spawn('pear', ['run', file, 'hello', 'world'])
   t.teardown(() => child.kill('SIGKILL'))
 
   const pr = promiseWithResolvers()
   streamProcess(child, (data) => {
     const lines = data.split('\n')
     for (const line of lines) {
-      console.log('🚀 ~ line:', line)
       if (line.startsWith('I am bot')) pr.resolve(line)
     }
   })
