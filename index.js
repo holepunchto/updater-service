@@ -7,8 +7,11 @@
 /* global Pear */
 const process = require('process')
 const debounceify = require('debounceify')
+const pearRun = require('pear-run')
+const pearUpdates = require('pear-updates')
+const pearPipe = require('pear-pipe')
 
-const DEV = Pear.config.key === null
+const DEV = Pear.app.key === null
 
 //
 // main
@@ -28,15 +31,15 @@ function main (botPath, opts = {}) {
 
   let onData = noop
   let onError = noop
-  const pipe = Pear.pipe
+  const pipe = pearPipe()
   if (pipe) {
     onData = (data) => pipe.write(JSON.stringify({ tag: 'data', data }) + '\n')
     onError = (data) => pipe.write(JSON.stringify({ tag: 'error', data }) + '\n')
   }
 
   let diff = []
-  let fork = Pear.config.fork
-  let length = Pear.config.length
+  let fork = Pear.app.fork
+  let length = Pear.app.length
   let workerVersion = `${fork}.${length}`
   let updates = null
 
@@ -75,7 +78,7 @@ function main (botPath, opts = {}) {
     workerVersion = await worker.version
   })
 
-  updates = Pear.updates((update) => {
+  updates = pearUpdates((update) => {
     diff = update.diff || []
     fork = update.version.fork
     length = update.version.length
@@ -117,7 +120,7 @@ function startWorker (runLink, onData, onError) {
   const closedPr = promiseWithResolvers()
   const versionPr = promiseWithResolvers()
 
-  const pipe = Pear.run(runLink, Pear.config.args)
+  const pipe = pearRun(runLink, Pear.app.args)
   pipe.on('data', (data) => {
     const lines = data.toString().split('\n')
     for (let msg of lines) {
@@ -164,7 +167,7 @@ function startWorker (runLink, onData, onError) {
 function getLink (botPath, fork, length) {
   if (DEV) return botPath // dev mode
 
-  const url = new URL(botPath, `${Pear.config.applink}/`)
+  const url = new URL(botPath, `${Pear.app.applink}/`)
   url.host = `${fork}.${length}.${url.host}`
   return url.href
 }
@@ -199,7 +202,7 @@ function hasUpdateDev (watchPrefixes, diff) {
  * ): Promise<void>}
  */
 async function run (botRunner) {
-  const pipe = Pear.pipe
+  const pipe = pearPipe()
   if (pipe) { // handle uncaught errors from botRunner
     process.on('uncaughtException', (err) => {
       pipe.write(JSON.stringify({ tag: 'error', data: `${err?.stack || err}` }) + '\n')
@@ -212,7 +215,7 @@ async function run (botRunner) {
   }
 
   const runner = await botRunner(
-    Pear.config.args,
+    Pear.app.args,
     {
       write: (data) => pipe?.write(JSON.stringify({ tag: 'data', data }) + '\n')
     }
@@ -251,7 +254,7 @@ async function run (botRunner) {
   pipe.on('close', () => {
     if (typeof runner?.close === 'function') runner.close()
   })
-  pipe.write(JSON.stringify({ tag: 'version', data: `${Pear.config.fork}.${Pear.config.length}` }) + '\n')
+  pipe.write(JSON.stringify({ tag: 'version', data: `${Pear.app.fork}.${Pear.app.length}` }) + '\n')
   pipe.write(JSON.stringify({ tag: 'ready' }) + '\n')
 }
 

@@ -15,7 +15,10 @@
   },
   "dependencies": {
     "bare-process": "^4.2.1",
-    "debounceify": "^1.1.0"
+    "debounceify": "^1.1.0",
+    "pear-pipe": "^1.0.3",
+    "pear-run": "^1.0.0",
+    "pear-updates": "^1.1.0"
   },
   "devDependencies": {
     "bare-fs": "^4.4.4",
