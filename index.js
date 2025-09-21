@@ -20,7 +20,7 @@ const DEV = Pear.config.key === null
  *   watchPrefixes?: string[],
  * }): void}
  */
-function main (botPath, opts = {}) {
+async function main (botPath, opts = {}) {
   const {
     delayUpdate = DEV ? 1000 : (Math.floor(Math.random() * (30 - 10 + 1)) + 10) * 1000, // 10-30s
     watchPrefixes = ['/src']
@@ -28,16 +28,17 @@ function main (botPath, opts = {}) {
 
   let onData = noop
   let onError = noop
-  const pipe = Pear.worker.pipe()
+  const pipe = Pear.worker.pipe() // v2: Pear.pipe
   if (pipe) {
     onData = (data) => pipe.write(JSON.stringify({ tag: 'data', data }) + '\n')
     onError = (data) => pipe.write(JSON.stringify({ tag: 'error', data }) + '\n')
   }
 
-  let diff = []
-  let fork = Pear.config.fork
-  let length = Pear.config.length
+  const version = await Pear.versions()
+  let fork = version.app.fork
+  let length = version.app.length
   let workerVersion = `${fork}.${length}`
+  let diff = []
   let updates = null
 
   const start = () => startWorker(
@@ -75,9 +76,9 @@ function main (botPath, opts = {}) {
   })
 
   updates = Pear.updates((update) => {
-    diff = update.diff || []
     fork = update.version.fork
     length = update.version.length
+    diff = update.diff || []
     debouncedRestart()
   })
 
@@ -116,7 +117,7 @@ function startWorker (runLink, onData, onError) {
   const closedPr = promiseWithResolvers()
   const versionPr = promiseWithResolvers()
 
-  const pipe = Pear.worker.run(runLink, Pear.config.args)
+  const pipe = Pear.worker.run(runLink, Pear.config.args) // v2: Pear.run
   pipe.on('data', (data) => {
     const lines = data.toString().split('\n')
     for (let msg of lines) {
@@ -198,7 +199,7 @@ function hasUpdateDev (watchPrefixes, diff) {
  * ): Promise<void>}
  */
 async function run (botRunner) {
-  const pipe = Pear.worker.pipe()
+  const pipe = Pear.worker.pipe() // v2: Pear.pipe
   if (pipe) { // handle uncaught errors from botRunner
     process.on('uncaughtException', (err) => {
       pipe.write(JSON.stringify({ tag: 'error', data: `${err?.stack || err}` }) + '\n')
@@ -250,7 +251,9 @@ async function run (botRunner) {
   pipe.on('close', () => {
     if (typeof runner?.close === 'function') runner.close()
   })
-  pipe.write(JSON.stringify({ tag: 'version', data: `${Pear.config.fork}.${Pear.config.length}` }) + '\n')
+
+  const version = await Pear.versions()
+  pipe.write(JSON.stringify({ tag: 'version', data: `${version.app.fork}.${version.app.length}` }) + '\n')
   pipe.write(JSON.stringify({ tag: 'ready' }) + '\n')
 }
 
