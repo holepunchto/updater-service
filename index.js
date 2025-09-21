@@ -51,9 +51,10 @@ function main (botPath, opts = {}) {
   )
   let worker = start()
 
-  const close = () => {
+  const close = async () => {
     updates?.destroy()
     worker.close()
+    await worker.closed
   }
   Pear.teardown(() => close())
 
