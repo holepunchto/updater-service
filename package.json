@@ -11,7 +11,7 @@
     "lint": "standard",
     "lint:fix": "standard --fix",
     "test:gen": "brittle -r test/all.mjs test/*.test.js",
-    "test": "bare test/all.mjs"
+    "test": "brittle-bare -c test/all.mjs"
   },
   "dependencies": {
     "bare-process": "^4.2.1",
