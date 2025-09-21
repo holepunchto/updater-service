@@ -1,5 +1,8 @@
 {
   "name": "@holepunchto/bot-service-parent",
   "main": "index.js",
-  "pear": {}
+  "pear": {},
+  "dependencies": {
+    "pear-run": "^1.0.0"
+  }
 }
