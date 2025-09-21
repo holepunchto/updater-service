@@ -28,7 +28,7 @@ function main (botPath, opts = {}) {
 
   let onData = noop
   let onError = noop
-  const pipe = Pear.worker.pipe()
+  const pipe = Pear.pipe
   if (pipe) {
     onData = (data) => pipe.write(JSON.stringify({ tag: 'data', data }) + '\n')
     onError = (data) => pipe.write(JSON.stringify({ tag: 'error', data }) + '\n')
@@ -117,7 +117,7 @@ function startWorker (runLink, onData, onError) {
   const closedPr = promiseWithResolvers()
   const versionPr = promiseWithResolvers()
 
-  const pipe = Pear.worker.run(runLink, Pear.config.args)
+  const pipe = Pear.run(runLink, Pear.config.args)
   pipe.on('data', (data) => {
     const lines = data.toString().split('\n')
     for (let msg of lines) {
@@ -199,7 +199,7 @@ function hasUpdateDev (watchPrefixes, diff) {
  * ): Promise<void>}
  */
 async function run (botRunner) {
-  const pipe = Pear.worker.pipe()
+  const pipe = Pear.pipe
   if (pipe) { // handle uncaught errors from botRunner
     process.on('uncaughtException', (err) => {
       pipe.write(JSON.stringify({ tag: 'error', data: `${err?.stack || err}` }) + '\n')
