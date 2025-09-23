@@ -26,8 +26,8 @@ function main (botPath, opts = {}) {
     watchPrefixes = ['/src']
   } = opts
 
-  let onData = noop
-  let onError = noop
+  let onData = console.log
+  let onError = console.log
   const pipe = Pear.worker.pipe()
   if (pipe) {
     onData = (data) => pipe.write(JSON.stringify({ tag: 'data', data }) + '\n')
@@ -262,7 +262,5 @@ function parseMsg (msg) {
     return { tag: 'unknown', data: msg }
   }
 }
-
-function noop () {}
 
 module.exports = { main, run }
