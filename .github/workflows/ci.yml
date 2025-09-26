@@ -40,4 +40,4 @@ jobs:
           npx notif-bot-client ${GITHUB_REPOSITORY} ${GITHUB_REF} https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID} CI FAILED
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NOTIF_BOT_SERVER_PUBLIC_KEY: ${{ secrets.NOTIF_BOT_SERVER_PUBLIC_KEY }
+          NOTIF_BOT_SERVER_PUBLIC_KEY: ${{ secrets.NOTIF_BOT_SERVER_PUBLIC_KEY }}
