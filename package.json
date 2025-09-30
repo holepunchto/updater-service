@@ -26,8 +26,7 @@
     "bare-subprocess": "^5.1.2",
     "brittle": "^3.19.0",
     "pear-interface": "^1.1.0",
-    "standard": "^17.1.2",
-    "test-tmp": "^1.4.0"
+    "standard": "^17.1.2"
   },
   "imports": {
     "child_process": {

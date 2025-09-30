@@ -1,3 +1,7 @@
+![CI](https://github.com/holepunchto/bot-service/actions/workflows/ci.yml/badge.svg)
+![Release](https://github.com/holepunchto/bot-service/actions/workflows/release.yml/badge.svg)
+![Bump Deps](https://github.com/holepunchto/bot-service/actions/workflows/bump-deps.yml/badge.svg)
+
 # Bot Service
 - Run bot as a pear app (via pear-run)
 - Auto restart bot on update (via pear-updates)

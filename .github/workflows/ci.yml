@@ -1,36 +1,34 @@
 name: CI
 
 on:
-  schedule:
-    - cron: '0 0 * * *'
   push:
     branches:
       - main
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
+    inputs:
+      bump-deps:
+        type: boolean
 
 jobs:
   test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-        - os: ubuntu-latest
-          platform: linux
-          arch: x64
-        - os: macos-latest
-          platform: darwin
-          arch: x64
-        - os: windows-latest
-          platform: win32
-          arch: x64
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: holepunchto/actions/.github/steps/setup-repo@v1
+      - if: github.event_name == 'schedule' || inputs.bump-deps == true
+        run: rm package-lock.json
       - run: npm i -g bare-runtime@latest
       - run: npm i
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # - run: npm t
       - run: npm run lint
+      - if: failure()
+        run: |
+          npm i -g @holepunchto/notif-bot-client
+          npx notif-bot-client ${GITHUB_REPOSITORY} ${GITHUB_REF} https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID} CI FAILED
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NOTIF_BOT_SERVER_PUBLIC_KEY: ${{ secrets.NOTIF_BOT_SERVER_PUBLIC_KEY }}
