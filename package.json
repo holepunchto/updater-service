@@ -17,13 +17,13 @@
     "bare-process": "^4.2.1",
     "debounceify": "^1.1.0",
     "pear-pipe": "^1.0.3",
-    "pear-run": "^1.0.0",
+    "pear-run": "^1.0.1",
     "pear-updates": "^1.1.0"
   },
   "devDependencies": {
-    "bare-fs": "^4.4.4",
+    "bare-fs": "^4.4.5",
     "bare-path": "^3.0.0",
-    "bare-subprocess": "^5.1.2",
+    "bare-subprocess": "^5.1.4",
     "brittle": "^3.19.0",
     "pear-interface": "^1.1.0",
     "standard": "^17.1.2"
