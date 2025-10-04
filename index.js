@@ -219,7 +219,7 @@ async function run (botRunner) {
 
   if (!pipe) return
 
-  pipe.on('data', (data) => {
+  pipe.on('data', async (data) => {
     const lines = data.toString().split('\n')
     for (let msg of lines) {
       msg = msg.trim()
@@ -228,17 +228,17 @@ async function run (botRunner) {
 
       if (obj.tag === 'data') {
         if (typeof runner?.write === 'function') {
-          runner.write(obj.data)
+          await runner.write(obj.data)
         } else {
           console.log('Missing write function')
         }
       } else if (obj.tag === 'close') {
         if (typeof runner?.close === 'function') {
-          runner.close().finally(() => pipe.end())
+          await runner.close()
         } else {
           console.log('Missing close function')
-          pipe.end()
         }
+        pipe.end()
       } else {
         console.log('Unknown message', obj)
       }
