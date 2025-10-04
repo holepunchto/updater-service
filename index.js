@@ -234,11 +234,11 @@ async function run (botRunner) {
         }
       } else if (obj.tag === 'close') {
         if (typeof runner?.close === 'function') {
-          runner.close()
+          runner.close().finally(() => pipe.end())
         } else {
           console.log('Missing close function')
+          pipe.end()
         }
-        pipe.end()
       } else {
         console.log('Unknown message', obj)
       }
