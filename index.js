@@ -234,7 +234,7 @@ async function run (botRunner) {
         }
       } else if (obj.tag === 'close') {
         if (typeof runner?.close === 'function') {
-          await runner.close()
+          await runner.close().catch(console.log)
         } else {
           console.log('Missing close function')
         }
