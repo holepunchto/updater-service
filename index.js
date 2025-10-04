@@ -200,15 +200,17 @@ function hasUpdateDev (watchPrefixes, diff) {
  */
 async function run (botRunner) {
   const pipe = Pear.worker.pipe()
-  if (pipe) { // handle uncaught errors from botRunner
-    process.on('uncaughtException', (err) => {
-      pipe.write(JSON.stringify({ tag: 'error', data: `${err?.stack || err}` }) + '\n')
-      pipe.end()
-    })
-    process.on('unhandledRejection', (err) => {
-      pipe.write(JSON.stringify({ tag: 'error', data: `${err?.stack || err}` }) + '\n')
-      pipe.end()
-    })
+
+  process.on('uncaughtException', onError)
+  process.on('unhandledRejection', onError)
+
+  function onError (err) {
+    if (!pipe) {
+      console.log(err)
+      process.exit(1)
+    }
+    pipe.write(JSON.stringify({ tag: 'error', data: `${err?.stack || err}` }) + '\n')
+    pipe.end()
   }
 
   const runner = await botRunner(
