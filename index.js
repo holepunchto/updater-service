@@ -203,15 +203,13 @@ function hasUpdateDev (watchPrefixes, diff) {
  */
 async function run (botRunner) {
   const pipe = pearPipe()
-  if (pipe) { // handle uncaught errors from botRunner
-    process.on('uncaughtException', (err) => {
+  if (pipe) {
+    process.on('uncaughtException', onError)
+    process.on('unhandledRejection', onError)
+    function onError (err) {
       pipe.write(JSON.stringify({ tag: 'error', data: `${err?.stack || err}` }) + '\n')
       pipe.end()
-    })
-    process.on('unhandledRejection', (err) => {
-      pipe.write(JSON.stringify({ tag: 'error', data: `${err?.stack || err}` }) + '\n')
-      pipe.end()
-    })
+    }
   }
 
   const runner = await botRunner(
@@ -223,7 +221,7 @@ async function run (botRunner) {
 
   if (!pipe) return
 
-  pipe.on('data', (data) => {
+  pipe.on('data', async (data) => {
     const lines = data.toString().split('\n')
     for (let msg of lines) {
       msg = msg.trim()
@@ -232,13 +230,13 @@ async function run (botRunner) {
 
       if (obj.tag === 'data') {
         if (typeof runner?.write === 'function') {
-          runner.write(obj.data)
+          await runner.write(obj.data)
         } else {
           console.log('Missing write function')
         }
       } else if (obj.tag === 'close') {
         if (typeof runner?.close === 'function') {
-          runner.close()
+          await runner.close().catch(console.log)
         } else {
           console.log('Missing close function')
         }
