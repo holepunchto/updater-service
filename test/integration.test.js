@@ -1,4 +1,5 @@
 const test = require('brittle')
+const rrp = require('resolve-reject-promise')
 const path = require('path')
 const fs = require('fs')
 const { spawn } = require('child_process')
@@ -8,7 +9,7 @@ test('basic - direct run', async t => {
   const child = spawn('pear', ['run', file, 'hello', 'world'])
   t.teardown(() => child.kill('SIGKILL'))
 
-  const pr = promiseWithResolvers()
+  const pr = rrp()
   streamProcess(child, (data) => {
     const lines = data.split('\n')
     for (const line of lines) {
@@ -29,9 +30,9 @@ test('basic - start main', async t => {
   const child = spawn('pear', ['run', file, 'hello', 'world'])
   t.teardown(() => child.kill('SIGKILL'))
 
-  const prWorker = promiseWithResolvers()
-  const prBot = promiseWithResolvers()
-  const prClose = promiseWithResolvers()
+  const prWorker = rrp()
+  const prBot = rrp()
+  const prClose = rrp()
 
   streamProcess(child, (data) => {
     const lines = data.split('\n')
@@ -59,8 +60,8 @@ test('error', async t => {
   const child = spawn('pear', ['run', file])
   t.teardown(() => child.kill('SIGKILL'))
 
-  const prError = promiseWithResolvers()
-  const prClose = promiseWithResolvers()
+  const prError = rrp()
+  const prClose = rrp()
 
   streamProcess(child, (data) => {
     const lines = data.split('\n')
@@ -79,8 +80,8 @@ test('error - uncaught exception', async t => {
   const child = spawn('pear', ['run', file])
   t.teardown(() => child.kill('SIGKILL'))
 
-  const prError = promiseWithResolvers()
-  const prClose = promiseWithResolvers()
+  const prError = rrp()
+  const prClose = rrp()
 
   streamProcess(child, (data) => {
     const lines = data.split('\n')
@@ -106,11 +107,11 @@ test('update', async t => {
   t.teardown(() => child.kill('SIGKILL'))
 
   let versionMsg = ''
-  const prReady = promiseWithResolvers()
-  const prUpdate = promiseWithResolvers()
-  const prClosingWorker = promiseWithResolvers()
-  const prClosedWorker = promiseWithResolvers()
-  const prStartingNewWorker = promiseWithResolvers()
+  const prReady = rrp()
+  const prUpdate = rrp()
+  const prClosingWorker = rrp()
+  const prClosedWorker = rrp()
+  const prStartingNewWorker = rrp()
 
   streamProcess(child, (data) => {
     const lines = data.split('\n')
@@ -163,9 +164,9 @@ test('user app starts bot-service in a worker', async t => {
   const child = spawn('pear', ['run', `pear://${stageParent.data.key}`, stageChild.data.key])
   t.teardown(() => child.kill('SIGKILL'))
 
-  const prData = promiseWithResolvers()
-  const prError = promiseWithResolvers()
-  const prClose = promiseWithResolvers()
+  const prData = rrp()
+  const prError = rrp()
+  const prClose = rrp()
 
   streamProcess(child, (data) => {
     const lines = data.split('\n')
@@ -221,13 +222,4 @@ function streamProcess (proc, write) {
   proc.on('exit', (code) => {
     if (+code) write(`Exit with code ${code}`)
   })
-}
-
-function promiseWithResolvers () {
-  const resolvers = {}
-  const promise = new Promise((resolve, reject) => {
-    resolvers.resolve = resolve
-    resolvers.reject = reject
-  })
-  return { promise, ...resolvers }
 }
