@@ -26,7 +26,7 @@ jobs:
           key: pear-v1
       - run: |
           export PATH="/home/runner/.config/pear/bin:$PATH"
-          if command -v pear
+          if [ -x /home/runner/.config/pear/bin/pear ]
           then pear -v
           else npx pear@latest
           fi
