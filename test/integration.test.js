@@ -10,7 +10,7 @@ test.solo('basic - direct run', async t => {
   console.log('process.env', process.env)
   spawn('env', [], { stdio: 'inherit' })
   spawn('pear', ['-v'], { stdio: 'inherit' })
-  const child = spawn('pear', ['run', file, 'hello', 'world'])
+  const child = spawn('pear', ['run', file, 'hello', 'world'], { stdio: 'inherit' })
   t.teardown(() => child.kill('SIGKILL'))
 
   const pr = rrp()
