@@ -7,20 +7,20 @@ const { spawn } = require('child_process')
 
 test.solo('basic - direct run', async t => {
   const file = path.join(__dirname, 'fixtures', 'basic', 'bot.js')
-  console.log('process.env', process.env)
-  spawn('env', [], { stdio: 'inherit' })
+  // console.log('process.env', process.env)
+  // spawn('env', [], { stdio: 'inherit' })
   spawn('pear', ['-v'], { stdio: 'inherit' }, { env: process.env })
-  const child = spawn('pear', ['run', file, 'hello', 'world'], { stdio: 'inherit' })
+  const child = spawn('pear', ['run', file, 'hello', 'world'], { env: process.env })
   t.teardown(() => child.kill('SIGKILL'))
 
   const pr = rrp()
-  // streamProcess(child, (data) => {
-  //   const lines = data.split('\n')
-  //   for (const line of lines) {
-  //     console.log('🚀 ~ line:', line)
-  //     if (line.startsWith('I am bot')) pr.resolve(line)
-  //   }
-  // })
+  streamProcess(child, (data) => {
+    const lines = data.split('\n')
+    for (const line of lines) {
+      console.log('🚀 ~ line:', line)
+      if (line.startsWith('I am bot')) pr.resolve(line)
+    }
+  })
   const res = await pr.promise
   child.kill()
 
