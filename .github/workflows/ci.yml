@@ -30,7 +30,7 @@ jobs:
       - run: |
           export PATH="/home/runner/.config/pear/bin:$PATH"
           if [ -x /home/runner/.config/pear/bin/pear ]
-          then pear -v
+          then pear --log -v
           else npx pear@latest
           fi
           npm t
