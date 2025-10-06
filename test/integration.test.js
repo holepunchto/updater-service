@@ -2,6 +2,7 @@ const test = require('brittle')
 const rrp = require('resolve-reject-promise')
 const path = require('path')
 const fs = require('fs')
+const process = require('process')
 const { spawn } = require('child_process')
 
 test.solo('basic - direct run', async t => {
