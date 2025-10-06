@@ -14,16 +14,21 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # timeout-minutes: 5
     steps:
       - uses: holepunchto/actions/.github/steps/setup-repo@v1
       - if: github.event_name == 'schedule' || inputs.bump-deps == true
         run: rm package-lock.json
       - run: npm i -g bare-runtime@latest
+      - uses: actions/cache@v4
+        with:
+          path: ~/.config/pear
+          key: pear-v1
+      - run: npx pear@latest
       - run: npm i
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # - run: npm t
+      - run: npm t
       - run: npm run lint
       - if: failure()
         run: |
