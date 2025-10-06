@@ -14,13 +14,13 @@ test.solo('basic - direct run', async t => {
   t.teardown(() => child.kill('SIGKILL'))
 
   const pr = rrp()
-  streamProcess(child, (data) => {
-    const lines = data.split('\n')
-    for (const line of lines) {
-      console.log('🚀 ~ line:', line)
-      if (line.startsWith('I am bot')) pr.resolve(line)
-    }
-  })
+  // streamProcess(child, (data) => {
+  //   const lines = data.split('\n')
+  //   for (const line of lines) {
+  //     console.log('🚀 ~ line:', line)
+  //     if (line.startsWith('I am bot')) pr.resolve(line)
+  //   }
+  // })
   const res = await pr.promise
   child.kill()
 
