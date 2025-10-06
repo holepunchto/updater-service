@@ -20,13 +20,13 @@ jobs:
       - if: github.event_name == 'schedule' || inputs.bump-deps == true
         run: rm package-lock.json
       - run: npm i -g bare-runtime@latest
+      - run: npm i
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/cache@v4
         with:
           path: ~/.config/pear
           key: pear-v1
-      - run: npm i
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: |
           export PATH="/home/runner/.config/pear/bin:$PATH"
           if [ -x /home/runner/.config/pear/bin/pear ]

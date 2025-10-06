@@ -9,6 +9,7 @@ test.solo('basic - direct run', async t => {
   const file = path.join(__dirname, 'fixtures', 'basic', 'bot.js')
   console.log('process.env', process.env)
   spawn('env', [], { stdio: 'inherit' })
+  spawn('pear', ['-v'], { stdio: 'inherit' })
   const child = spawn('pear', ['run', file, 'hello', 'world'])
   t.teardown(() => child.kill('SIGKILL'))
 
