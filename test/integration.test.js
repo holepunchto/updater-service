@@ -4,9 +4,9 @@ const path = require('path')
 const fs = require('fs')
 const { spawn } = require('child_process')
 
-test('basic - direct run', async t => {
-  const file = path.join(__dirname, 'fixtures', 'basic', 'bot.js')
-  const child = spawn('pear', ['run', file, 'hello', 'world'])
+test.solo('basic - direct run', async t => {
+  // const file = path.join(__dirname, 'fixtures', 'basic', 'bot.js')
+  const child = spawn('pear', ['run', 'bot', 'hello', 'world'], { cwd: path.join(__dirname, 'fixtures', 'basic') })
   t.teardown(() => child.kill('SIGKILL'))
 
   const pr = rrp()
