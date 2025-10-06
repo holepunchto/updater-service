@@ -27,6 +27,7 @@ jobs:
       - run: |
           npx pear@latest
           npx pear run pear://runtime
+          pear -v
       - run: npm i
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
