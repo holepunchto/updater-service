@@ -24,7 +24,9 @@ jobs:
         with:
           path: ~/.config/pear
           key: pear-v1
-      - run: npx pear@latest
+      - run: |
+          npx pear@latest
+          npx pear run pear://runtime
       - run: npm i
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
