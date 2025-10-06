@@ -25,9 +25,11 @@ jobs:
           path: ~/.config/pear
           key: pear-v1
       - run: |
-          npx pear@latest
           export PATH="/home/runner/.config/pear/bin:$PATH"
-          pear -v
+          if command -v pear
+          then pear -v
+          else npx pear@latest
+          fi
       - run: npm i
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
