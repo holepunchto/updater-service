@@ -26,7 +26,7 @@ jobs:
           key: pear-v1
       - run: |
           npx pear@latest
-          npx pear run pear://runtime
+          export PATH="/home/runner/.config/pear/bin:$PATH"
           pear -v
       - run: npm i
         env:
