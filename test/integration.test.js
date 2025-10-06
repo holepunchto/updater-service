@@ -6,7 +6,10 @@ const { spawn } = require('child_process')
 
 test.solo('basic - direct run', async t => {
   // const file = path.join(__dirname, 'fixtures', 'basic', 'bot.js')
-  const child = spawn('pear', ['run', 'bot', 'hello', 'world'], { cwd: path.join(__dirname, 'fixtures', 'basic') })
+  const child = spawn('pear', ['run', 'bot', 'hello', 'world'], {
+    cwd: path.join(__dirname, 'fixtures', 'basic'),
+    env: process.env
+  })
   t.teardown(() => child.kill('SIGKILL'))
 
   const pr = rrp()
