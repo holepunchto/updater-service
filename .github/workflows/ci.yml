@@ -17,8 +17,6 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: holepunchto/actions/.github/steps/setup-repo@v1
-      - if: github.event_name == 'schedule' || inputs.bump-deps == true
-        run: rm package-lock.json
       - run: npm i -g bare-runtime@latest
       - run: npm i
         env:

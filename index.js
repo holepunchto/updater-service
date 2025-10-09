@@ -5,6 +5,7 @@
  * @typedef {function(): Promise} Close
  */
 /* global Pear */
+const rrp = require('resolve-reject-promise')
 const process = require('process')
 const debounceify = require('debounceify')
 const pearRun = require('pear-run')
@@ -116,9 +117,9 @@ function main (botPath, opts = {}) {
  * }}
  */
 function startWorker (runLink, onData, onError) {
-  const readyPr = promiseWithResolvers()
-  const closedPr = promiseWithResolvers()
-  const versionPr = promiseWithResolvers()
+  const readyPr = rrp()
+  const closedPr = rrp()
+  const versionPr = rrp()
 
   const pipe = pearRun(runLink, Pear.app.args)
   pipe.on('data', (data) => {
@@ -170,16 +171,6 @@ function getLink (botPath, fork, length) {
   const url = new URL(botPath, `${Pear.app.applink}/`)
   url.host = `${fork}.${length}.${url.host}`
   return url.href
-}
-
-/** @type {function(): { promise: Promise, resolve: function, reject: function }} **/
-function promiseWithResolvers () {
-  const resolvers = {}
-  const promise = new Promise((resolve, reject) => {
-    resolvers.resolve = resolve
-    resolvers.reject = reject
-  })
-  return { promise, ...resolvers }
 }
 
 /** @type {function(string[], { key: string }[]): boolean} **/
