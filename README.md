@@ -3,8 +3,8 @@
 ![Bump Deps](https://github.com/holepunchto/bot-service/actions/workflows/bump-deps.yml/badge.svg)
 
 # Bot Service
-- Run bot as a pear app (via Pear.worker)
-- Auto restart bot on update (via Pear.updates)
+- Run bot as a pear app (via pear-run)
+- Auto restart bot on update (via pear-updates)
 
 ## Sample bot
 - create `main.js` as the main entry point, then run `botService.main(<path-to-bot>)`
