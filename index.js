@@ -12,9 +12,8 @@ const pearRun = require('pear-run')
 const pearUpdates = require('pear-updates')
 const pearPipe = require('pear-pipe')
 
-const app = () => Pear.app || Pear.config // v1 compat
-
-const DEV = app().key === null
+const app = Pear.app || Pear.config // v1 compat
+const DEV = app.key === null
 
 //
 // main
@@ -41,8 +40,8 @@ function main (botPath, opts = {}) {
   }
 
   let diff = []
-  let fork = app().fork
-  let length = app().length
+  let fork = app.fork
+  let length = app.length
   let workerVersion = `${fork}.${length}`
   let updates = null
 
@@ -123,7 +122,7 @@ function startWorker (runLink, onData, onError) {
   const closedPr = rrp()
   const versionPr = rrp()
 
-  const pipe = pearRun(runLink, app().args)
+  const pipe = pearRun(runLink, app.args)
   pipe.on('data', (data) => {
     const lines = data.toString().split('\n')
     for (let msg of lines) {
@@ -170,7 +169,7 @@ function startWorker (runLink, onData, onError) {
 function getLink (botPath, fork, length) {
   if (DEV) return botPath // dev mode
 
-  const url = new URL(botPath, `${app().applink}/`)
+  const url = new URL(botPath, `${app.applink}/`)
   url.host = `${fork}.${length}.${url.host}`
   return url.href
 }
@@ -206,7 +205,7 @@ async function run (botRunner) {
   }
 
   const runner = await botRunner(
-    app().args,
+    app.args,
     {
       write: (data) => pipe?.write(JSON.stringify({ tag: 'data', data }) + '\n')
     }
@@ -245,7 +244,7 @@ async function run (botRunner) {
   pipe.on('close', () => {
     if (typeof runner?.close === 'function') runner.close()
   })
-  pipe.write(JSON.stringify({ tag: 'version', data: `${app().fork}.${app().length}` }) + '\n')
+  pipe.write(JSON.stringify({ tag: 'version', data: `${app.fork}.${app.length}` }) + '\n')
   pipe.write(JSON.stringify({ tag: 'ready' }) + '\n')
 }
 
