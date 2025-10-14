@@ -14,19 +14,29 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # timeout-minutes: 5
     steps:
       - uses: holepunchto/actions/.github/steps/setup-repo@v1
       - run: npm i -g bare-runtime@latest
       - run: npm i
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # - run: npm t
-      - run: npm run lint
-      - if: failure()
-        run: |
-          npm i -g @holepunchto/notif-bot-client
-          npx notif-bot-client ${GITHUB_REPOSITORY} ${GITHUB_REF} https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID} CI FAILED
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NOTIF_BOT_SERVER_PUBLIC_KEY: ${{ secrets.NOTIF_BOT_SERVER_PUBLIC_KEY }}
+      - uses: actions/cache@v4
+        with:
+          path: ~/.config/pear
+          key: pear-v1
+      - run: |
+          export PATH="/home/runner/.config/pear/bin:$PATH"
+          if [ -x /home/runner/.config/pear/bin/pear ]
+          then pear --log -v
+          else npx pear@latest
+          fi
+          npm t
+      # - run: npm run lint
+      # - if: failure()
+      #   run: |
+      #     npm i -g @holepunchto/notif-bot-client
+      #     npx notif-bot-client ${GITHUB_REPOSITORY} ${GITHUB_REF} https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID} CI FAILED
+      #   env:
+      #     NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #     NOTIF_BOT_SERVER_PUBLIC_KEY: ${{ secrets.NOTIF_BOT_SERVER_PUBLIC_KEY }}
