@@ -1,6 +1,6 @@
 {
   "name": "@holepunchto/bot-service",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Run bot as a pear app",
   "main": "index.js",
   "files": [
