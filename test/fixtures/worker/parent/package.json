@@ -1,5 +1,5 @@
 {
-  "name": "@holepunchto/bot-service-parent",
+  "name": "@holepunchto/updater-service-parent",
   "main": "index.js",
   "pear": {},
   "dependencies": {

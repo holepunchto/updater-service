@@ -1,7 +1,7 @@
 /* global Pear */
 
 const pearRun = require('pear-run')
-const pipe = pearRun(`pear://${Pear.config.args[0]}/test/fixtures/worker/child/main.js`)
+const pipe = pearRun(`pear://${Pear.config.args[0]}/test/fixtures/worker/child/updater.js`)
 
 pipe.on('data', (data) => {
   const lines = data.toString().split('\n')

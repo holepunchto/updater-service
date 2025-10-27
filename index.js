@@ -13,7 +13,10 @@ const pearUpdates = require('pear-updates')
 const pearPipe = require('pear-pipe')
 
 const app = Pear.app || Pear.config // v1 compat
-const DEV = app.key === null
+const IS_LOCAL = app.key === null
+const IS_DEV = IS_LOCAL && app.dev === true
+if (IS_LOCAL) console.log('LOCAL mode')
+if (IS_DEV) console.log('DEV mode')
 
 //
 // main
@@ -25,9 +28,9 @@ const DEV = app.key === null
  *   watchPrefixes?: string[],
  * }): void}
  */
-function main (botPath, opts = {}) {
+function main (runnerPath, opts = {}) {
   const {
-    delayUpdate = DEV ? 1000 : (Math.floor(Math.random() * (30 - 10 + 1)) + 10) * 1000, // 10-30s
+    delayUpdate = (Math.floor(Math.random() * (30 - 10 + 1)) + 10) * 1000, // 10-30s
     watchPrefixes = ['/src']
   } = opts
 
@@ -46,7 +49,7 @@ function main (botPath, opts = {}) {
   let updates = null
 
   const start = () => startWorker(
-    getLink(botPath, fork, length),
+    getLink(runnerPath, fork, length),
     (data) => onData(data),
     (err) => {
       updates?.destroy()
@@ -64,10 +67,10 @@ function main (botPath, opts = {}) {
   Pear.teardown(() => close())
 
   const debouncedRestart = debounceify(async () => {
-    console.log(`Detected update and debounced for ${delayUpdate}ms before restarting`)
+    console.log(`Detected update and debounced for ${delayUpdate}ms`)
     await new Promise(resolve => setTimeout(resolve, delayUpdate)) // wait for the final update
-    if (DEV && !hasUpdateDev(watchPrefixes, diff)) return
-    if (!DEV && workerVersion === `${fork}.${length}`) return
+    if (IS_DEV && !hasUpdateDev(watchPrefixes, diff)) return
+    if (!IS_DEV && workerVersion === `${fork}.${length}`) return
 
     console.log(`Updating worker from ${workerVersion} to ${fork}.${length}`)
     await worker.ready
@@ -98,7 +101,7 @@ function main (botPath, opts = {}) {
       }
     })
     pipe.on('error', (err) => {
-      console.log('Parent error', err)
+      console.log('Parent error:', err)
       close()
     })
     pipe.on('close', () => {
@@ -134,15 +137,15 @@ function startWorker (runLink, onData, onError) {
         console.log('Worker ready')
         readyPr.resolve()
       } else if (obj.tag === 'version') {
-        console.log('Worker version', obj.data)
+        console.log('Worker version:', obj.data)
         versionPr.resolve(obj.data)
       } else if (obj.tag === 'error') {
-        console.log('Worker error', obj.data)
+        console.log('Worker error:', obj.data)
         onError(obj.data)
       } else if (obj.tag === 'data') {
         onData(obj.data)
       } else {
-        console.log('Worker unknown message', obj)
+        console.log('Worker unknown message:', obj)
       }
     }
   })
@@ -166,10 +169,10 @@ function startWorker (runLink, onData, onError) {
 }
 
 /** @type {function(string, number, number): string} **/
-function getLink (botPath, fork, length) {
-  if (DEV) return botPath // dev mode
+function getLink (runnerPath, fork, length) {
+  if (IS_LOCAL) return runnerPath
 
-  const url = new URL(botPath, `${app.applink}/`)
+  const url = new URL(runnerPath, `${app.applink}/`)
   url.host = `${fork}.${length}.${url.host}`
   return url.href
 }
@@ -177,8 +180,10 @@ function getLink (botPath, fork, length) {
 /** @type {function(string[], { key: string }[]): boolean} **/
 function hasUpdateDev (watchPrefixes, diff) {
   for (const { key } of diff) {
+    console.log('Checking diff:', watchPrefixes, key)
     if (!key.endsWith('.js')) continue
     if (!watchPrefixes.some(prefix => key.startsWith(prefix))) continue
+    console.log('Found diff:', key)
     return true
   }
   return false
@@ -193,7 +198,7 @@ function hasUpdateDev (watchPrefixes, diff) {
  *  function(string[], { write: Write }): Promise<{ write?: Write, close?: Close }>
  * ): Promise<void>}
  */
-async function run (botRunner) {
+async function run (runnerFn) {
   const pipe = pearPipe()
   if (pipe) {
     process.on('uncaughtException', onError)
@@ -204,7 +209,7 @@ async function run (botRunner) {
     }
   }
 
-  const runner = await botRunner(
+  const runner = await runnerFn(
     app.args,
     {
       write: (data) => pipe?.write(JSON.stringify({ tag: 'data', data }) + '\n')
@@ -228,13 +233,13 @@ async function run (botRunner) {
         }
       } else if (obj.tag === 'close') {
         if (typeof runner?.close === 'function') {
-          await runner.close().catch(console.log)
+          await runner.close()
         } else {
           console.log('Missing close function')
         }
         pipe.end()
       } else {
-        console.log('Unknown message', obj)
+        console.log('Unknown message:', obj)
       }
     }
   })

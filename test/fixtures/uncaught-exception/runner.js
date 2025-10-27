@@ -1,7 +1,7 @@
 /* global Pear */
-const botService = require('../../../index')
+const updaterService = require('../../../index')
 
-botService.run(async (args) => {
+updaterService.run(async (args) => {
   const timeout = setTimeout(() => {
     throw new Error('This is an uncaught exception')
   }, 1000)

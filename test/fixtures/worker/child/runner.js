@@ -1,9 +1,9 @@
 /* global Pear */
-const botService = require('../../../../index')
+const updaterService = require('../../../../index')
 
-botService.run(async (args, opts) => {
+updaterService.run(async (args, opts) => {
   const interval = setInterval(() => {
-    opts.write('I am bot')
+    opts.write('I am runner')
   }, 1000)
   Pear.teardown(() => clearInterval(interval))
   return {

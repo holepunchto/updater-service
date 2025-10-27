@@ -1,12 +1,22 @@
 {
-  "name": "@holepunchto/bot-service",
+  "name": "@holepunchto/updater-service",
   "version": "2.0.2",
-  "description": "Run bot as a pear app",
+  "description": "Auto updater service for pear apps",
   "main": "index.js",
   "files": [
     "index.js"
   ],
-  "pear": {},
+  "pear": {
+    "stage": {
+      "ignore": [
+        ".git",
+        ".github",
+        ".gitignore",
+        "coverage",
+        "README.md"
+      ]
+    }
+  },
   "scripts": {
     "lint": "standard",
     "lint:fix": "standard --fix",
@@ -14,15 +24,15 @@
     "test": "brittle-bare -c test/all.mjs"
   },
   "dependencies": {
-    "bare-process": "^4.2.1",
+    "bare-process": "^4.2.2",
     "debounceify": "^1.1.0",
     "pear-pipe": "^1.0.5",
-    "pear-run": "^1.0.5",
+    "pear-run": "^1.0.7",
     "pear-updates": "^1.1.0",
     "resolve-reject-promise": "^1.1.0"
   },
   "devDependencies": {
-    "bare-fs": "^4.4.7",
+    "bare-fs": "^4.5.0",
     "bare-path": "^3.0.0",
     "bare-subprocess": "^5.1.4",
     "brittle": "^3.19.0",
@@ -51,10 +61,10 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/holepunchto/bot-service.git"
+    "url": "git+https://github.com/holepunchto/updater-service.git"
   },
   "bugs": {
-    "url": "https://github.com/holepunchto/bot-service/issues"
+    "url": "https://github.com/holepunchto/updater-service/issues"
   },
-  "homepage": "https://github.com/holepunchto/bot-service#readme"
+  "homepage": "https://github.com/holepunchto/updater-service#readme"
 }
