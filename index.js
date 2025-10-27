@@ -25,13 +25,13 @@ if (IS_DEV) console.log('DEV mode')
 /**
  * @type {function(string, {
  *   delayUpdate?: number,
- *   watchPrefixes?: string[],
+ *   devWatchPrefixes?: string[],
  * }): void}
  */
 function main (runnerPath, opts = {}) {
   const {
     delayUpdate = (Math.floor(Math.random() * (30 - 10 + 1)) + 10) * 1000, // 10-30s
-    watchPrefixes = ['/src']
+    devWatchPrefixes = ['/']
   } = opts
 
   let onData = console.log
@@ -69,7 +69,7 @@ function main (runnerPath, opts = {}) {
   const debouncedRestart = debounceify(async () => {
     console.log(`Detected update and debounced for ${delayUpdate}ms`)
     await new Promise(resolve => setTimeout(resolve, delayUpdate)) // wait for the final update
-    if (IS_DEV && !hasUpdateDev(watchPrefixes, diff)) return
+    if (IS_DEV && !hasDevUpdate(devWatchPrefixes, diff)) return
     if (!IS_DEV && workerVersion === `${fork}.${length}`) return
 
     console.log(`Updating worker from ${workerVersion} to ${fork}.${length}`)
@@ -178,7 +178,7 @@ function getLink (runnerPath, fork, length) {
 }
 
 /** @type {function(string[], { key: string }[]): boolean} **/
-function hasUpdateDev (watchPrefixes, diff) {
+function hasDevUpdate (watchPrefixes, diff) {
   for (const { key } of diff) {
     console.log('Checking diff:', watchPrefixes, key)
     if (!key.endsWith('.js')) continue
