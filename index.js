@@ -30,7 +30,7 @@ if (IS_DEV) console.log('DEV mode')
  */
 function main (runnerPath, opts = {}) {
   const {
-    delayUpdate = (Math.floor(Math.random() * (30 - 10 + 1)) + 10) * 1000, // 10-30s
+    delayUpdate = IS_DEV ? 1000 : (Math.floor(Math.random() * (30 - 10 + 1)) + 10) * 1000, // 10-30s
     devWatchPrefixes = ['/']
   } = opts
 
