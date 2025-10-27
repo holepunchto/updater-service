@@ -126,7 +126,7 @@ test('handle update', async t => {
   })
 
   await prReady.promise
-  t.is(versionMsg, `Worker version ${version}`, `worker started on version ${version}`)
+  t.is(versionMsg, `Worker version: ${version}`, `worker started on version ${version}`)
 
   await fs.promises.writeFile(path.join(__dirname, 'tmp', 'foo.js'), `console.log(${Date.now()})`, 'utf-8')
   const stage2 = await pearStage(t, channel, '.')
@@ -146,7 +146,7 @@ test('handle update', async t => {
       }
     }, 100)
   })
-  t.is(versionMsg, `Worker version ${newVersion}`, `worker updated to new version ${newVersion}`)
+  t.is(versionMsg, `Worker version: ${newVersion}`, `worker updated to new version ${newVersion}`)
 
   child.kill()
 })

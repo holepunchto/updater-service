@@ -13,7 +13,6 @@
         ".github",
         ".gitignore",
         "coverage",
-        "test",
         "README.md"
       ]
     }
