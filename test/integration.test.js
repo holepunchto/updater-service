@@ -76,7 +76,7 @@ test('handle error', async t => {
 })
 
 test('handle uncaught exception', async t => {
-  const file = path.join(__dirname, 'fixtures', 'error-uncaught-exception', 'updater.js')
+  const file = path.join(__dirname, 'fixtures', 'uncaught-exception', 'updater.js')
   const child = spawn('pear', ['run', file])
   t.teardown(() => child.kill('SIGKILL'))
 
@@ -96,8 +96,6 @@ test('handle uncaught exception', async t => {
 })
 
 test('handle update', async t => {
-  t.timeout(120_000)
-
   const channel = `update-${Date.now()}`
   const stage1 = await pearStage(t, channel, '.')
   t.ok(stage1.data.key, 'stage1 done')
