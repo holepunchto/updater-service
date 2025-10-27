@@ -4,7 +4,7 @@ const path = require('path')
 const fs = require('fs')
 const { spawn } = require('child_process')
 
-test('run runner', async t => {
+test('basic runner', async t => {
   const file = path.join(__dirname, 'fixtures', 'basic', 'runner.js')
   const child = spawn('pear', ['run', file, 'hello', 'world'])
   t.teardown(() => child.kill('SIGKILL'))
@@ -25,7 +25,7 @@ test('run runner', async t => {
   t.is(args[1], 'world', 'args[1] is correct')
 })
 
-test('run updater', async t => {
+test('basic updater', async t => {
   const file = path.join(__dirname, 'fixtures', 'basic', 'updater.js')
   const child = spawn('pear', ['run', file, 'hello', 'world'])
   t.teardown(() => child.kill('SIGKILL'))
