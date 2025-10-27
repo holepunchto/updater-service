@@ -4,7 +4,7 @@ const path = require('path')
 const fs = require('fs')
 const { spawn } = require('child_process')
 
-test('basic - direct run', async t => {
+test('run runner', async t => {
   const file = path.join(__dirname, 'fixtures', 'basic', 'runner.js')
   const child = spawn('pear', ['run', file, 'hello', 'world'])
   t.teardown(() => child.kill('SIGKILL'))
@@ -25,8 +25,8 @@ test('basic - direct run', async t => {
   t.is(args[1], 'world', 'args[1] is correct')
 })
 
-test('basic - start main', async t => {
-  const file = path.join(__dirname, 'fixtures', 'basic', 'main.js')
+test('run updater', async t => {
+  const file = path.join(__dirname, 'fixtures', 'basic', 'updater.js')
   const child = spawn('pear', ['run', file, 'hello', 'world'])
   t.teardown(() => child.kill('SIGKILL'))
 
@@ -46,7 +46,7 @@ test('basic - start main', async t => {
   const resRunner = await prRunner.promise
   child.kill()
 
-  t.is(resWorker, 'Worker version 0.0', 'worker output is correct')
+  t.is(resWorker, 'Worker version: 0.0', 'worker output is correct')
   t.ok(resRunner.startsWith('I am runner'), 'runner output is correct')
   const args = resRunner.match(/\[(.*?)\]/)[1].split(',').map(arg => arg.trim().replace(/'/g, ''))
   t.is(args[0], 'hello', 'runner args[0] is correct')
@@ -55,8 +55,8 @@ test('basic - start main', async t => {
   await prClose.promise
 })
 
-test('error', async t => {
-  const file = path.join(__dirname, 'fixtures', 'error', 'main.js')
+test('handle error', async t => {
+  const file = path.join(__dirname, 'fixtures', 'error', 'updater.js')
   const child = spawn('pear', ['run', file])
   t.teardown(() => child.kill('SIGKILL'))
 
@@ -75,8 +75,8 @@ test('error', async t => {
   await prClose.promise
 })
 
-test('error - uncaught exception', async t => {
-  const file = path.join(__dirname, 'fixtures', 'error-uncaught-exception', 'main.js')
+test('handle uncaught exception', async t => {
+  const file = path.join(__dirname, 'fixtures', 'error-uncaught-exception', 'updater.js')
   const child = spawn('pear', ['run', file])
   t.teardown(() => child.kill('SIGKILL'))
 
@@ -95,7 +95,7 @@ test('error - uncaught exception', async t => {
   await prClose.promise
 })
 
-test('update', async t => {
+test('handle update', async t => {
   t.timeout(120_000)
 
   const channel = `update-${Date.now()}`
@@ -103,7 +103,7 @@ test('update', async t => {
   t.ok(stage1.data.key, 'stage1 done')
   const version = `${stage1.data.release}.${stage1.data.version}`
 
-  const child = spawn('pear', ['run', `pear://${stage1.data.key}/test/fixtures/basic/main.js`])
+  const child = spawn('pear', ['run', `pear://${stage1.data.key}/test/fixtures/basic/updater.js`])
   t.teardown(() => child.kill('SIGKILL'))
 
   let versionMsg = ''
@@ -151,7 +151,7 @@ test('update', async t => {
   child.kill()
 })
 
-test('user app starts updater-service in a worker', async t => {
+test('run app in worker', async t => {
   const channel = `update-${Date.now()}`
 
   const parentDir = path.join(__dirname, 'fixtures', 'worker', 'parent')
