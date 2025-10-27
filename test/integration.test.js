@@ -5,7 +5,7 @@ const fs = require('fs')
 const { spawn } = require('child_process')
 
 test('basic - direct run', async t => {
-  const file = path.join(__dirname, 'fixtures', 'basic', 'bot.js')
+  const file = path.join(__dirname, 'fixtures', 'basic', 'runner.js')
   const child = spawn('pear', ['run', file, 'hello', 'world'])
   t.teardown(() => child.kill('SIGKILL'))
 
@@ -13,13 +13,13 @@ test('basic - direct run', async t => {
   streamProcess(child, (data) => {
     const lines = data.split('\n')
     for (const line of lines) {
-      if (line.startsWith('I am bot')) pr.resolve(line)
+      if (line.startsWith('I am runner')) pr.resolve(line)
     }
   })
   const res = await pr.promise
   child.kill()
 
-  t.ok(res.startsWith('I am bot'), 'output is correct')
+  t.ok(res.startsWith('I am runner'), 'output is correct')
   const args = res.match(/\[(.*?)\]/)[1].split(',').map(arg => arg.trim().replace(/'/g, ''))
   t.is(args[0], 'hello', 'args[0] is correct')
   t.is(args[1], 'world', 'args[1] is correct')
@@ -31,26 +31,26 @@ test('basic - start main', async t => {
   t.teardown(() => child.kill('SIGKILL'))
 
   const prWorker = rrp()
-  const prBot = rrp()
+  const prRunner = rrp()
   const prClose = rrp()
 
   streamProcess(child, (data) => {
     const lines = data.split('\n')
     for (const line of lines) {
       if (line.startsWith('Worker version')) prWorker.resolve(line)
-      if (line.startsWith('I am bot')) prBot.resolve(line)
+      if (line.startsWith('I am runner')) prRunner.resolve(line)
       if (line.startsWith('Worker closed')) prClose.resolve()
     }
   })
   const resWorker = await prWorker.promise
-  const resBot = await prBot.promise
+  const resRunner = await prRunner.promise
   child.kill()
 
   t.is(resWorker, 'Worker version 0.0', 'worker output is correct')
-  t.ok(resBot.startsWith('I am bot'), 'bot output is correct')
-  const args = resBot.match(/\[(.*?)\]/)[1].split(',').map(arg => arg.trim().replace(/'/g, ''))
-  t.is(args[0], 'hello', 'bot args[0] is correct')
-  t.is(args[1], 'world', 'bot args[1] is correct')
+  t.ok(resRunner.startsWith('I am runner'), 'runner output is correct')
+  const args = resRunner.match(/\[(.*?)\]/)[1].split(',').map(arg => arg.trim().replace(/'/g, ''))
+  t.is(args[0], 'hello', 'runner args[0] is correct')
+  t.is(args[1], 'world', 'runner args[1] is correct')
 
   await prClose.promise
 })
@@ -71,7 +71,7 @@ test('error', async t => {
     }
   })
   const err = await prError.promise
-  t.ok(err.includes('I am bot with error'), 'error message is correct')
+  t.ok(err.includes('I am runner with error'), 'error message is correct')
   await prClose.promise
 })
 
@@ -151,7 +151,7 @@ test('update', async t => {
   child.kill()
 })
 
-test('user app starts bot-service in a worker', async t => {
+test('user app starts updater-service in a worker', async t => {
   const channel = `update-${Date.now()}`
 
   const parentDir = path.join(__dirname, 'fixtures', 'worker', 'parent')
@@ -171,7 +171,7 @@ test('user app starts bot-service in a worker', async t => {
   streamProcess(child, (data) => {
     const lines = data.split('\n')
     for (const line of lines) {
-      if (line.includes('I am bot')) prData.resolve()
+      if (line.includes('I am runner')) prData.resolve()
       if (line.includes('Test parent error')) prError.resolve(line)
       if (line.includes('Test parent closed')) prClose.resolve()
     }
