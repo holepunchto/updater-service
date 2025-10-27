@@ -1,6 +1,6 @@
 {
   "name": "@holepunchto/updater-service",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Auto updater service for pear apps",
   "main": "index.js",
   "files": [
