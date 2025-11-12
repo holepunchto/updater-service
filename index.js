@@ -84,6 +84,7 @@ function main (runnerPath, opts = {}) {
   })
 
   updates = pearUpdates((update) => {
+    if (!update.app) return
     diff = update.diff || []
     fork = update.version.fork
     length = update.version.length
