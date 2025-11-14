@@ -83,8 +83,7 @@ function main (runnerPath, opts = {}) {
     workerVersion = await worker.version
   })
 
-  updates = pearUpdates((update) => {
-    if (!update.app) return
+  updates = pearUpdates({ app: true, updated: true }, (update) => {
     diff = update.diff || []
     fork = update.version.fork
     length = update.version.length
