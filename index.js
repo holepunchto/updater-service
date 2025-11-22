@@ -71,6 +71,7 @@ function main (runnerPath, opts = {}) {
     await new Promise(resolve => setTimeout(resolve, delayUpdate)) // wait for the final update
     if (IS_DEV && !hasDevUpdate(devWatchPrefixes, diff)) return
     if (!IS_DEV && workerVersion === `${fork}.${length}`) return
+    if (!IS_DEV && (+workerVersion.split('.')[0] > +fork || +workerVersion.split('.')[1] > length)) return
 
     console.log(`Updating worker from ${workerVersion} to ${fork}.${length}`)
     await worker.ready
@@ -84,6 +85,7 @@ function main (runnerPath, opts = {}) {
   })
 
   updates = pearUpdates({ app: true, updated: true }, (update) => {
+    console.log('Received update', update)
     diff = update.diff || []
     fork = update.version.fork
     length = update.version.length
