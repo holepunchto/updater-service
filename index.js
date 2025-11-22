@@ -70,8 +70,11 @@ function main (runnerPath, opts = {}) {
     console.log(`Detected update and debounced for ${delayUpdate}ms`)
     await new Promise(resolve => setTimeout(resolve, delayUpdate)) // wait for the final update
     if (IS_DEV && !hasDevUpdate(devWatchPrefixes, diff)) return
-    if (!IS_DEV && workerVersion === `${fork}.${length}`) return
-    if (!IS_DEV && (+workerVersion.split('.')[0] > +fork || +workerVersion.split('.')[1] > length)) return
+    if (!IS_DEV) {
+      const [workerVersionFork, workerVersionLength] = workerVersion.split('.').map(Number)
+      if (fork < workerVersionFork) return
+      if (fork === workerVersionFork && length < workerVersionLength) return
+    }
 
     console.log(`Updating worker from ${workerVersion} to ${fork}.${length}`)
     await worker.ready
